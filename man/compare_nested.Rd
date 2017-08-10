@@ -2,18 +2,18 @@
 % Please edit documentation in R/model_comparison.R
 \name{compare_nested}
 \alias{compare_nested}
-\title{Compares nested models using partial log-likelihood}
+\title{Compare nested models}
 \usage{
-compare_nested(crfull, crreduced)
+compare_nested(full, reduced)
 }
 \arguments{
-\item{crfull}{Cox Regression object for the full model}
+\item{full}{Cox regression object (from the function, coxph) for the full model}
 
-\item{crreduced}{Cox Regression object for the reduced model}
+\item{reduced}{Cox Regression object for the reduced model}
 }
 \value{
 data frame with the statistic and p-value
 }
 \description{
-Compares nested models using partial log-likelihood
+Performs partial likelihood ratio test for cox regression objects using evaluated log partial likelihoods from the full and nested models to determine if the inclusion of additional predictors in the model is necessary.
 }

@@ -2,18 +2,18 @@
 % Please edit documentation in R/frequent_terms .R
 \name{clean_corpus}
 \alias{clean_corpus}
-\title{Cleans corpus}
+\title{Clean corpus}
 \usage{
-clean_corpus(corpus, stopwrds = NULL)
+clean_corpus(corpus, stopwords = NULL)
 }
 \arguments{
-\item{corpus}{corpus to be cleaned}
+\item{corpus}{corpus to be cleaned. To create the corpus use: source <- VectorSource(vec), corpus <- VCorpus(source)}
 
-\item{stopwrds}{optional, adds stopwords to remove}
+\item{stopwords}{optional, adds stopwords to remove. If not specified it will only remove English stopwords from the tm package.}
 }
 \value{
 corpus
 }
 \description{
-Cleans corpus
+Removes whitespace, transforms characters to lowercase, and removes stopwords (with the option to add additional stopwords to remove). This function is used in get_freq_terms.
 }

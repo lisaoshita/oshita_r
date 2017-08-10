@@ -2,20 +2,20 @@
 % Please edit documentation in R/frequent_terms .R
 \name{get_freq_terms}
 \alias{get_freq_terms}
-\title{Returns a data frame of terms and their frequencies}
+\title{Find the most frequent terms and their frequencies from a character vector}
 \usage{
-get_freq_terms(vec, n = NULL, stopwrds = NULL)
+get_freq_terms(vec, n = NULL, stopwords = NULL)
 }
 \arguments{
 \item{vec}{character vector to be turned into corpus}
 
-\item{n}{optional, specifies the number of frequent terms to return}
+\item{n}{optional, specifies the number of frequent terms to return. If not specified it will return the entire data frame.}
 
-\item{stopwrds}{optional, adds stopwards to remove}
+\item{stopwords}{optional, adds stopwards to remove. If not specified it will only remove English stopwords from the tm package.}
 }
 \value{
 data frame
 }
 \description{
-Returns a data frame of terms and their frequencies
+Turns the input character vector into a DocumentTermMatrix. Sums the frequencies of each words. Returns a data frame with terms and their frequencies arranged from most to least frequent.
 }
