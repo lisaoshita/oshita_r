@@ -32,7 +32,7 @@ clean_corpus <- function(corpus, stopwords = NULL){
 #' @param n optional, specifies the number of frequent terms to return. If not specified it will return the entire data frame.
 #' @param stopwords optional, adds stopwards to remove. If not specified it will only remove English stopwords from the tm package.
 #' @return data frame
-#' @importFrom tm VectorSource VCorpus DocumentTermMatrix
+#' @importFrom tm VectorSource VCorpus DocumentTermMatrix weightTfIdf
 #' @export
 get_freq_terms <- function(vec, n = NULL, stopwords = NULL) {
   source <- VectorSource(vec)
