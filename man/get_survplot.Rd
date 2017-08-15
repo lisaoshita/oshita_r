@@ -11,6 +11,9 @@ get_survplot(survfit, xlim = NULL)
 
 \item{xlim}{optional, specifies the x-axis limits of the returned survival plot}
 }
+\value{
+survival curves plotted with ggplot
+}
 \description{
 Takes in a survfit object as input. Uses tidy function from broom package to convert to data frame. Uses ggplot to plot Kaplan-Meier survival curves.
 }
