@@ -237,6 +237,8 @@ variable_setup <- function(data) {
 
   data$contain_unanswered <- str_detect(as.character(data$title), pattern = or1(freq_terms_u$word))
   data$contain_answered <- str_detect(as.character(data$title), pattern = or1(freq_terms_a$word))
+
+  return(data)
 }
 
 #=====================================================================
