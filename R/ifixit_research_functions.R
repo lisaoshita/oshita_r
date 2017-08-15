@@ -125,10 +125,7 @@ get_survplot <- function(survfit, xlim = NULL) {
 #' @return data frame
 #' @export
 variable_setup <- function(data) {
-  data$category <- as.character(data$category)
-  data$category[is.na(data$category)] <- "Other"
-
-  data$new_category <- data$category
+  data$new_category <- as.character(data$category)
   apple_terms <- c("apple", "ipod", "ipad")
   data$apple <- str_detect(str_to_lower(data$device), pattern = START %R% or1(apple_terms) %R% SPC)
   data$new_category[data$apple == TRUE | data$subcategory == "iPhone" | data$category == "Mac"] <- "Apple Product"
@@ -137,14 +134,12 @@ variable_setup <- function(data) {
   data$new_category[data$new_category == "Car and Truck" | data$new_category == "Vehicle"] <- "Vehicle"
   data$new_category[data$new_category == "Apparel" | data$new_category == "Computer Hardware" | data$new_category == "Media Player" | data$new_category == "Skills"] <- "Other"
   #=============================================
-  # new_user
+  #new_user
   data$new_user <- as.factor(data$new_user)
-
   #=============================================
   #weekday
-  data$datetime <- as.POSIXct(data$post_date, origin="1970-01-01")
-  data$weekday <- factor(weekdays(data$datetime), levels = c("Monday", "Tuesday", "Wednesday",
-                                                             "Thursday", "Friday", "Saturday", "Sunday"))
+  data$datetime <- as.POSIXct(data$post_date,origin="1970-01-01")
+  data$weekday <- factor(weekdays(data$datetime), levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
   #=============================================
   #ampm
   data$hour <- as.numeric(format(data$datetime,"%H"))
@@ -157,18 +152,19 @@ variable_setup <- function(data) {
   data$device_length <- str_length(data$device)
   #=============================================
   # if the title ends with a question mark
+  library(rebus)
   data$title_questionmark <- str_detect(data$title, pattern = QUESTION %R% END)
   #=============================================
   # if title begins with "wh"
   data$title_beginwh <- str_detect(str_to_lower(data$title), pattern = "^wh")
   #=============================================
-  # if the question was updated
-  data$update <- str_detect(data$text, pattern = "===")
-  #=============================================
   # if text is in all lower case
-  test1$cleaned <- str_replace_all(test1$text, " ", "")
-  test1$cleaned <- str_replace_all(test1$cleaned, "[[:punct:]]|[[:digit:]]", "")
-  test1$text_all_lower <- str_detect(test1$cleaned, pattern = "^[[:lower:]]+$")
+  data$cleaned <- str_replace_all(data$text, " ", "")
+  data$cleaned <- str_replace_all(data$cleaned, "[[:punct:]]|[[:digit:]]", "")
+  data$text_all_lower <- str_detect(data$cleaned, pattern = "^[[:lower:]]+$")
+  #=============================================
+  # if user updated the question
+  data$update <- str_detect(data$text, pattern = "===")
   #=============================================
   # frequent tags
   split_tags <- str_split(data$tags, ", ", simplify = TRUE)
@@ -202,15 +198,15 @@ variable_setup <- function(data) {
   # number of "frequent" tags a question contains
   threshold <- 0.005
   num_pop <- function(var, threshold) {
-    num_pop <- rep(0, nrow(test1))
-    num_pop[test1[[var]] >= threshold] <- 1
+    num_pop <- rep(0, nrow(data))
+    num_pop[data[[var]] >= threshold] <- 1
     return(num_pop)
   }
   numpop1 <- num_pop("score1", threshold)
   numpop2 <- num_pop("score2", threshold)
   numpop3 <- num_pop("score3", threshold)
   numpop4 <- num_pop("score4", threshold)
-  test1$num_freq_tags <- numpop1 + numpop2 + numpop3 + numpop4
+  data$num_freq_tags <- numpop1 + numpop2 + numpop3 + numpop4
 
   #=============================================
   #frequent terms in unanswered/answered questions
@@ -244,8 +240,6 @@ variable_setup <- function(data) {
 
   data$contain_unanswered <- str_detect(as.character(data$title), pattern = or1(freq_terms_u$word))
   data$contain_answered <- str_detect(as.character(data$title), pattern = or1(freq_terms_a$word))
-
-  return(data)
 }
 
 #=====================================================================
