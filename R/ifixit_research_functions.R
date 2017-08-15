@@ -20,6 +20,8 @@ setup <- function(){
   for (i in empty) {
     x$time_until_answer[i] <- (x$download_date[i] - x$post_date[i])/3600
   }
+  x$category <- as.character(x$category)
+  x$category[is.na(x$category)] <- "Other"
   return(x)
 }
 
