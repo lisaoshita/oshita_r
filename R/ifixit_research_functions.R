@@ -36,13 +36,10 @@ setup <- function(){
 #' @return data frame with the statistic and p-value
 #' @export
 compare_nested <- function(full, reduced) {
-  l_f <- summary(full)[["loglik"]][2]
-  l_r <- summary(reduced)[["loglik"]][2]
-  stat <- 2*(l_f - l_r)
-
-  df <- nrow(full[["coefficients"]]) - nrow(reduced[["coefficients"]])
+  stat <- 2*(summary(full)[["loglik"]][2] - summary(reduced)[["loglik"]][2])
+  df <- nrow(summary(full)[["coefficients"]]) - nrow(summary(reduced)[["coefficients"]])
   pval <- 1 - pchisq(stat, df)
-  results <- data.frame(PLRT_statistic = stat, df = df, pvalue = pval)
+  results <- data.frame(PLRT = stat, df = df, pvalue = pval)
   return(results)
 }
 
