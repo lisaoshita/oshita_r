@@ -38,7 +38,7 @@ compare_nested <- function(full, reduced) {
   l_r <- summary(reduced)[["loglik"]][2]
   stat <- 2*(l_f - l_r)
 
-  df <- length(full[["coefficients"]]) - length(reduced[["coefficients"]])
+  df <- nrow(full[["coefficients"]]) - nrow(reduced[["coefficients"]])
   pval <- 1 - pchisq(stat, df)
   results <- data.frame(PLRT_statistic = stat, df = df, pvalue = pval)
   return(results)
@@ -122,7 +122,6 @@ get_survplot <- function(survfit, xlim = NULL) {
 #' @importFrom dplyr arrange filter desc
 #' @return data frame
 #' @export
-
 variable_setup <- function(data) {
   data$category <- as.character(data$category)
   data$category[is.na(data$category)] <- "Other"
@@ -138,7 +137,7 @@ variable_setup <- function(data) {
                       data$new_category == "Apparel"] <- "Other"
   #=============================================
   #weekday
-  data$datetime <- as.POSIXct(data$post_date,origin="1970-01-01")
+  data$datetime <- as.POSIXct(data$post_date, origin="1970-01-01")
   data$weekday <- factor(weekdays(data$datetime), levels = c("Monday", "Tuesday", "Wednesday",
                                                              "Thursday", "Friday", "Saturday", "Sunday"))
   #=============================================
@@ -242,3 +241,5 @@ variable_setup <- function(data) {
 
   return(data)
 }
+
+#=====================================================================
