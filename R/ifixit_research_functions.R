@@ -118,7 +118,7 @@ get_survplot <- function(survfit, xlim = NULL) {
 #' Function to set up each of the variables included in the cox regression model.
 #' Adds variables: new_category, weekday, ampm, text_length, device_length, title_questionmark, title_beginwh, capital_text, update, newline_ratio, frequent_tags, contain_answered, contain_unanswered
 #' @param data test data set to be used
-#' @importFrom stringr str_detect str_length str_to_lower str_count str_split
+#' @importFrom stringr str_detect str_length str_to_lower str_count str_split str_replace_all
 #' @importFrom rebus "%R%" or1 SPC START QUESTION
 #' @importFrom magrittr "%>%"
 #' @importFrom dplyr arrange filter desc
@@ -135,8 +135,11 @@ variable_setup <- function(data) {
   data$new_category[data$new_category == "Phone"] <- "Android/Other Phone"
   data$new_category[data$new_category == "Appliance" | data$new_category == "Household"] <- "Home"
   data$new_category[data$new_category == "Car and Truck" | data$new_category == "Vehicle"] <- "Vehicle"
-  data$new_category[data$new_category == "Computer Hardware" | data$new_category == "Media Player" |
-                      data$new_category == "Apparel"] <- "Other"
+  data$new_category[data$new_category == "Apparel" | data$new_category == "Computer Hardware" | data$new_category == "Media Player" | data$new_category == "Skills"] <- "Other"
+  #=============================================
+  # new_user
+  data$new_user <- as.factor(data$new_user)
+
   #=============================================
   #weekday
   data$datetime <- as.POSIXct(data$post_date, origin="1970-01-01")
@@ -150,24 +153,22 @@ variable_setup <- function(data) {
   data$ampm[data$hour >= 12 & data$hour < 17] <- "Afternoon" #noon - 5pm
   data$ampm[data$hour >= 17 & data$hour < 20] <- "Evening" #5pm - 8pm
   #=============================================
-  # text length
-  data$text_length <- str_length(data$text)
-  #=============================================
   # device name length
   data$device_length <- str_length(data$device)
   #=============================================
   # if the title ends with a question mark
-  library(rebus)
   data$title_questionmark <- str_detect(data$title, pattern = QUESTION %R% END)
   #=============================================
   # if title begins with "wh"
   data$title_beginwh <- str_detect(str_to_lower(data$title), pattern = "^wh")
   #=============================================
-  data$capital_text <- str_detect(as.character(data$text), pattern = "^[[:upper:]]")
-  #=============================================
+  # if the question was updated
   data$update <- str_detect(data$text, pattern = "===")
   #=============================================
-  data$newline_ratio <- str_count(data$text, pattern = "\n")/str_length(data$text)
+  # if text is in all lower case
+  test1$cleaned <- str_replace_all(test1$text, " ", "")
+  test1$cleaned <- str_replace_all(test1$cleaned, "[[:punct:]]|[[:digit:]]", "")
+  test1$text_all_lower <- str_detect(test1$cleaned, pattern = "^[[:lower:]]+$")
   #=============================================
   # frequent tags
   split_tags <- str_split(data$tags, ", ", simplify = TRUE)
@@ -197,15 +198,20 @@ variable_setup <- function(data) {
   data$score2 <- assign_score(data, "tag2")
   data$score3 <- assign_score(data, "tag3")
   data$score4 <- assign_score(data, "tag4")
-  data$avg_tag_score <- (data$score1 + data$score2 + data$score3 +
-                           data$score4)/as.numeric(data$n_tags)
-  data$avg_tag_score[is.nan(data$avg_tag_score)] <- 0
-  #=============================================
-  # if question contains "frequent" tag
-  percentile80 <- stats::quantile(data$avg_tag_score, probs = 0.80)
 
-  data$frequent_tag <- FALSE
-  data$frequent_tag[data$avg_tag_score >= percentile80] <- TRUE
+  # number of "frequent" tags a question contains
+  threshold <- 0.005
+  num_pop <- function(var, threshold) {
+    num_pop <- rep(0, nrow(test1))
+    num_pop[test1[[var]] >= threshold] <- 1
+    return(num_pop)
+  }
+  numpop1 <- num_pop("score1", threshold)
+  numpop2 <- num_pop("score2", threshold)
+  numpop3 <- num_pop("score3", threshold)
+  numpop4 <- num_pop("score4", threshold)
+  test1$num_freq_tags <- numpop1 + numpop2 + numpop3 + numpop4
+
   #=============================================
   #frequent terms in unanswered/answered questions
   answered <- data %>%
@@ -238,8 +244,6 @@ variable_setup <- function(data) {
 
   data$contain_unanswered <- str_detect(as.character(data$title), pattern = or1(freq_terms_u$word))
   data$contain_answered <- str_detect(as.character(data$title), pattern = or1(freq_terms_a$word))
-
-  data$new_user <- as.factor(data$new_user)
 
   return(data)
 }
