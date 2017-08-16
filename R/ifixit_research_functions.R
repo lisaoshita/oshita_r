@@ -26,6 +26,7 @@ setup <- function(){
   x$text <- as.character(x$text)
   x$device <- as.character(x$device)
   x$title <- as.character(x$title)
+  x$tags <- as.character(x$tags)
 
   return(x)
 }
