@@ -15,6 +15,8 @@ setup <- function(){
     dplyr::tbl_df() %>%
     dplyr::filter(langid == "en")
 
+  x <- x[,-which(colnames(a) == "langid")]
+
   x$time_until_answer <- (x$first_answer_date - x$post_date)/3600
   empty <- which(is.na(x$time_until_answer))
   for (i in empty) {
@@ -23,6 +25,7 @@ setup <- function(){
 
   x$category <- as.character(x$category)
   x$category[is.na(x$category)] <- "Other"
+  x$subcateogry <- as.character(x$subcategory)
   x$text <- as.character(x$text)
   x$device <- as.character(x$device)
   x$title <- as.character(x$title)
