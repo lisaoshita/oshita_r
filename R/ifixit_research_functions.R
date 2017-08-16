@@ -20,8 +20,13 @@ setup <- function(){
   for (i in empty) {
     x$time_until_answer[i] <- (x$download_date[i] - x$post_date[i])/3600
   }
+
   x$category <- as.character(x$category)
   x$category[is.na(x$category)] <- "Other"
+  x$text <- as.character(x$text)
+  x$device <- as.character(x$device)
+  x$title <- as.character(x$title)
+
   return(x)
 }
 
@@ -203,7 +208,7 @@ variable_setup <- function(data) {
   numpop2 <- num_pop("score2", threshold)
   numpop3 <- num_pop("score3", threshold)
   numpop4 <- num_pop("score4", threshold)
-  data$num_freq_tags <- numpop1 + numpop2 + numpop3 + numpop4
+  data$num_freq_tags <- as.factor(numpop1 + numpop2 + numpop3 + numpop4)
 
   #=============================================
   #frequent terms in unanswered/answered questions
@@ -237,6 +242,9 @@ variable_setup <- function(data) {
 
   data$contain_unanswered <- str_detect(as.character(data$title), pattern = or1(freq_terms_u$word))
   data$contain_answered <- str_detect(as.character(data$title), pattern = or1(freq_terms_a$word))
+
+  #=============================================
+
 
   return(data)
 }
