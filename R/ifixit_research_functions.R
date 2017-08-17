@@ -15,22 +15,23 @@ setup <- function(){
     dplyr::tbl_df() %>%
     dplyr::filter(langid == "en")
 
-  x <- x[,-which(colnames(a) == "langid")]
-
   x$time_until_answer <- (x$first_answer_date - x$post_date)/3600
   empty <- which(is.na(x$time_until_answer))
   for (i in empty) {
     x$time_until_answer[i] <- (x$download_date[i] - x$post_date[i])/3600
   }
 
+  # coding NAs as "Other"
   x$category <- as.character(x$category)
   x$category[is.na(x$category)] <- "Other"
-  x$subcateogry <- as.character(x$subcategory)
-  x$text <- as.character(x$text)
-  x$device <- as.character(x$device)
-  x$title <- as.character(x$title)
-  x$tags <- as.character(x$tags)
 
+  # recoding factor variables with over 10 levels as character variables
+  n_levels <- x %>%
+    select_if(is.factor) %>%
+    purrr::map_dbl(~length(levels(.)))
+  for (i in (which(n_levels > 10))) {
+    x[[names(n_levels)[i]]] <- as.character(x[[names(n_levels)[i]]])
+  }
   return(x)
 }
 
@@ -247,10 +248,11 @@ variable_setup <- function(data) {
   data$contain_unanswered <- str_detect(as.character(data$title), pattern = or1(freq_terms_u$word))
   data$contain_answered <- str_detect(as.character(data$title), pattern = or1(freq_terms_a$word))
 
-  #=============================================
-
 
   return(data)
 }
 
 #=====================================================================
+
+# still need to work on:
+# - if factor variable only has 1 question in it's level, merge it with it's neighboring level
