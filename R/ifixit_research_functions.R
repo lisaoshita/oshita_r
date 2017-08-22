@@ -5,9 +5,9 @@
 #' Subsets iFixit Answers data to only questions in English. Sets up time_until_answer (hrs) variable.
 #'
 #' @importFrom magrittr "%>%"
-#' @importFrom stringr str_detect str_to_lower
-#' @importFrom rebus "%R%" START SPC
-#' @importFrom dplyr group_by summarise n
+#' @importFrom stringr str_detect str_to_lower str_length str_count str_split str_replace_all
+#' @importFrom rebus "%R%" START SPC QUESTION or1
+#' @importFrom dplyr group_by summarise n arrange filter desc
 #' @return data frame
 #' @export
 setup <- function(){
@@ -18,7 +18,7 @@ setup <- function(){
   # subsetting to questions in English, converting langid from factor to character
   x <- out %>%
     tibble::as_tibble() %>%
-    dplyr::filter(langid == "en")
+    filter(langid == "en")
   x <- x[,-which(names(x) == "langid")]
   #====================================
   # creating time_until_answer
@@ -55,6 +55,158 @@ setup <- function(){
   for (i in which(counts$n <= 150)) {
     x$new_category[x$new_category == counts$new_category[i]] <- "Other"
   }
+  #====================================
+  #new_user
+  x$new_user <- as.factor(x$new_user)
+  #====================================
+  #weekday
+  x$datetime <- as.POSIXct(x$post_date,origin="1970-01-01")
+  x$weekday <- factor(weekdays(x$datetime), levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+  #=============================================
+  #ampm
+  x$hour <- as.numeric(format(x$datetime,"%H"))
+  x$ampm <- "Night"
+  x$ampm[x$hour >= 5 & x$hour < 12] <- "Morning"
+  x$ampm[x$hour >= 12 & x$hour < 17] <- "Afternoon" #noon - 5pm
+  x$ampm[x$hour >= 17 & x$hour < 20] <- "Evening" #5pm - 8pm
+  #=============================================
+  # text length
+  x$text_length <- str_length(x$text)
+  #=============================================
+  # device name length
+  x$device_length <- str_length(x$device)
+  #=============================================
+  # title length
+  x$title_length <- str_length(x$title)
+  #=============================================
+  # if the title ends with a question mark
+  x$title_questionmark <- str_detect(x$title, pattern = QUESTION %R% END)
+  #=============================================
+  # if title begins with "wh"
+  x$title_beginwh <- str_detect(str_to_lower(x$title), pattern = "^wh")
+  #=============================================
+  # if text is in all lower case
+  x$cleaned <- str_replace_all(x$text, " ", "")
+  x$cleaned <- str_replace_all(x$cleaned, "[[:punct:]]|[[:digit:]]", "")
+  x$text_all_lower <- str_detect(x$cleaned, pattern = "^[[:lower:]]+$")
+  #=============================================
+  # length of text until first end punctuation mark
+  length <- str_locate(x$text, pattern = "[.|?|!]")[,1]
+  q <- stats::quantile(length, probs = seq(0, 1, by = 0.25), na.rm = TRUE)
+  x$text_till_punct <- "none"
+  x$text_till_punct[length <= q[3]] <- "short"
+  x$text_till_punct[length >= q[3] & length <= q[4]] <- "medium"
+  x$text_till_punct[length >= q[4]] <- "long"
+  #=============================================
+  # if text contains any end punctuation
+  x$text_contain_punct <- str_detect(x$text, pattern = "[.|?|!]")
+  #=============================================
+  # if user updated the question
+  x$update <- str_detect(x$text, pattern = "===")
+  #=============================================
+  # prior effort?
+  prior_terms <- c("tried", "searched", "researched", "tested", "replaced", "used", "checked", "investigated", "considered", "measured", "attempted", "inspected", "fitted")
+  x$prior_effort <- str_detect(str_to_lower(x$text), pattern = or1(prior_terms))
+  #=============================================
+  # gratitude
+  gratitude_terms <- c("please", "thank you", "thanks", "thankful", "appreciate", "appreciated", "grateful")
+  x$gratitude <- str_detect(str_to_lower(x$text), pattern = or1(gratitude_terms))
+  #=============================================
+  # greeting
+  greeting_terms <- c("hey", "hello", "greetings", "hi")
+  x$greeting <- str_detect(str_to_lower(x$text), pattern = START %R% or1(greeting_terms))
+  pvalues <- get_pvalue("greeting")
+  #=============================================
+  # newline ratio to length of text
+  x$newline_ratio <- str_count(x$text, pattern = "\n")/str_length(x$text)
+  pvalues <- get_pvalue("newline_ratio")
+  #=============================================
+  # avg_tag_length
+  split_tags <- str_split(x$tags, ", ", simplify = TRUE)
+  x$avg_tag_length <- NA
+  not_na <- which(x$tags != "")
+  for (i in not_na) {
+    total_char <- sum(str_length(as.vector(split_tags[i,])))
+    total_tags <- sum(as.vector(split_tags[i,]) != "")
+    x$avg_tag_length[i] <- total_char / total_tags
+  }
+  x$avg_tag_length[is.na(x$avg_tag_length)] <- 0
+  #=============================================
+  # frequency of tags
+  tag_vector <- as.vector(split_tags)
+  tag_vector <- tag_vector[which(tag_vector != "")]
+  unique_tags <- unique(tag_vector)
+
+  tag_freq <- x.frame(tag = unique_tags, percent = purrr::map_dbl(unique_tags, ~mean(rowSums(split_tags == .) > 0)))
+  tag_freq <- tag_freq %>%
+    arrange(desc(percent))
+
+  #creating average frequency score variable
+  x$tag1 <- split_tags[,1]
+  x$tag2 <- split_tags[,2]
+  x$tag3 <- split_tags[,3]
+  x$tag4 <- split_tags[,4]
+
+  assign_score <- function(x, variable) {
+    score <- rep(0, nrow(x))
+    notempty <- which(x[[variable]] != "")
+    for (i in notempty) {
+      score[i] <- tag_freq$percent[which(tag_freq$tag == x[[variable]][i])]
+    }
+    return(score)
+  }
+  x$score1 <- assign_score(x, "tag1")
+  x$score2 <- assign_score(x, "tag2")
+  x$score3 <- assign_score(x, "tag3")
+  x$score4 <- assign_score(x, "tag4")
+  x$avg_tag_score <- (x$score1 + x$score2 + x$score3 + x$score4)/as.numeric(x$n_tags)
+  x$avg_tag_score[is.nan(x$avg_tag_score)] <- 0
+
+  # number of "frequent" tags a question contains
+  threshold <- 0.005
+  num_pop <- function(var, threshold) {
+    num_pop <- rep(0, nrow(x))
+    num_pop[x[[var]] >= threshold] <- 1
+    return(num_pop)
+  }
+  numpop1 <- num_pop("score1", threshold)
+  numpop2 <- num_pop("score2", threshold)
+  numpop3 <- num_pop("score3", threshold)
+  numpop4 <- num_pop("score4", threshold)
+  x$num_freq_tags <- as.factor(numpop1 + numpop2 + numpop3 + numpop4)
+
+  #=============================================
+  #frequent terms in unanswered/answered questions
+  answered <- x %>%
+    tibble::as_tibble() %>%
+    filter(answered == 1)
+  unanswered <- x %>%
+    tibble::as_tibble() %>%
+    filter(answered == 0)
+
+  terms_a <- oshitar::get_freq_terms(answered$title, stopwords = c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix"))
+  terms_a$prop_in_answered <- terms_a$frequency/nrow(terms_a)
+  colnames(terms_a)[2] <- "frequency_a"
+
+  terms_u <- oshitar::get_freq_terms(unanswered$title, stopwords = c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix"))
+  terms_u$prop_in_unanswered <- terms_u$frequency/nrow(terms_u)
+  colnames(terms_u)[2] <- "frequency_u"
+
+  combined <- dplyr::full_join(terms_a, terms_u, by = "word")
+  combined$ratio <- combined$prop_in_answered / combined$prop_in_unanswered
+
+  p_threshold <- 0.01
+  ratio_threshold <- 1
+
+  freq_terms_u <- combined %>%
+    filter(prop_in_unanswered > p_threshold) %>%
+    filter(ratio < ratio_threshold)
+  freq_terms_a <- combined %>%
+    filter(prop_in_answered > p_threshold) %>%
+    filter(ratio > ratio_threshold)
+
+  x$contain_unanswered <- str_detect(as.character(x$title), pattern = or1(freq_terms_u$word))
+  x$contain_answered <- str_detect(as.character(x$title), pattern = or1(freq_terms_a$word))
   return(x)
 }
 
