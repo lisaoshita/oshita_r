@@ -135,7 +135,7 @@ setup <- function(){
   tag_vector <- tag_vector[which(tag_vector != "")]
   unique_tags <- unique(tag_vector)
 
-  tag_freq <- x.frame(tag = unique_tags, percent = purrr::map_dbl(unique_tags, ~mean(rowSums(split_tags == .) > 0)))
+  tag_freq <- data.frame(tag = unique_tags, percent = purrr::map_dbl(unique_tags, ~mean(rowSums(split_tags == .) > 0)))
   tag_freq <- tag_freq %>%
     arrange(desc(percent))
 
@@ -145,7 +145,7 @@ setup <- function(){
   x$tag3 <- split_tags[,3]
   x$tag4 <- split_tags[,4]
 
-  assign_score <- function(x, variable) {
+  assign_score <- function(variable) {
     score <- rep(0, nrow(x))
     notempty <- which(x[[variable]] != "")
     for (i in notempty) {
@@ -153,10 +153,10 @@ setup <- function(){
     }
     return(score)
   }
-  x$score1 <- assign_score(x, "tag1")
-  x$score2 <- assign_score(x, "tag2")
-  x$score3 <- assign_score(x, "tag3")
-  x$score4 <- assign_score(x, "tag4")
+  x$score1 <- assign_score("tag1")
+  x$score2 <- assign_score("tag2")
+  x$score3 <- assign_score("tag3")
+  x$score4 <- assign_score("tag4")
   x$avg_tag_score <- (x$score1 + x$score2 + x$score3 + x$score4)/as.numeric(x$n_tags)
   x$avg_tag_score[is.nan(x$avg_tag_score)] <- 0
 
