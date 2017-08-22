@@ -86,9 +86,9 @@ setup <- function(){
   x$title_beginwh <- str_detect(str_to_lower(x$title), pattern = "^wh")
   #=============================================
   # if text is in all lower case
-  x$cleaned <- str_replace_all(x$text, " ", "")
-  x$cleaned <- str_replace_all(x$cleaned, "[[:punct:]]|[[:digit:]]", "")
-  x$text_all_lower <- str_detect(x$cleaned, pattern = "^[[:lower:]]+$")
+  cleaned <- str_replace_all(x$text, " ", "")
+  cleaned <- str_replace_all(cleaned, "[[:punct:]]|[[:digit:]]", "")
+  x$text_all_lower <- str_detect(cleaned, pattern = "^[[:lower:]]+$")
   #=============================================
   # length of text until first end punctuation mark
   length <- str_locate(x$text, pattern = "[.|?|!]")[,1]
@@ -105,16 +105,19 @@ setup <- function(){
   x$update <- str_detect(x$text, pattern = "===")
   #=============================================
   # prior effort?
-  prior_terms <- c("tried", "searched", "researched", "tested", "replaced", "used", "checked", "investigated", "considered", "measured", "attempted", "inspected", "fitted")
-  x$prior_effort <- str_detect(str_to_lower(x$text), pattern = or1(prior_terms))
+  x$prior_effort <- str_detect(str_to_lower(x$text),
+                               pattern = or("tried", "searched", "researched", "tested",
+                                            "replaced", "used", "checked", "investigated",
+                                            "considered", "measured", "attempted", "inspected", "fitted"))
   #=============================================
   # gratitude
-  gratitude_terms <- c("please", "thank you", "thanks", "thankful", "appreciate", "appreciated", "grateful")
-  x$gratitude <- str_detect(str_to_lower(x$text), pattern = or1(gratitude_terms))
+  x$gratitude <- str_detect(str_to_lower(x$text), pattern = or("please", "thank you",
+                                                               "thanks", "thankful",
+                                                               "appreciate", "appreciated",
+                                                               "grateful"))
   #=============================================
   # greeting
-  greeting_terms <- c("hey", "hello", "greetings", "hi")
-  x$greeting <- str_detect(str_to_lower(x$text), pattern = START %R% or1(greeting_terms))
+  x$greeting <- str_detect(str_to_lower(x$text), pattern = START %R% or("hey", "hello", "greetings", "hi"))
   #=============================================
   # newline ratio to length of text
   x$newline_ratio <- str_count(x$text, pattern = "\n")/str_length(x$text)
@@ -153,25 +156,25 @@ setup <- function(){
     }
     return(score)
   }
-  x$score1 <- assign_score("tag1")
-  x$score2 <- assign_score("tag2")
-  x$score3 <- assign_score("tag3")
-  x$score4 <- assign_score("tag4")
-  x$avg_tag_score <- (x$score1 + x$score2 + x$score3 + x$score4)/as.numeric(x$n_tags)
+  score1 <- assign_score("tag1")
+  score2 <- assign_score("tag2")
+  score3 <- assign_score("tag3")
+  score4 <- assign_score("tag4")
+  x$avg_tag_score <- (score1 + score2 + score3 + score4)/as.numeric(x$n_tags)
   x$avg_tag_score[is.nan(x$avg_tag_score)] <- 0
 
   # number of "frequent" tags a question contains
   threshold <- 0.005
-  num_pop <- function(var, threshold) {
-    num_pop <- rep(0, nrow(x))
-    num_pop[x[[var]] >= threshold] <- 1
-    return(num_pop)
+  n_freq <- function(var, threshold) {
+    num_freq <- rep(0, nrow(x))
+    num_freq[var >= threshold] <- 1
+    return(num_freq)
   }
-  numpop1 <- num_pop("score1", threshold)
-  numpop2 <- num_pop("score2", threshold)
-  numpop3 <- num_pop("score3", threshold)
-  numpop4 <- num_pop("score4", threshold)
-  x$num_freq_tags <- as.factor(numpop1 + numpop2 + numpop3 + numpop4)
+  freq1 <- num_pop(score1, threshold)
+  freq2 <- num_pop(score2, threshold)
+  freq3 <- num_pop(score3, threshold)
+  freq4 <- num_pop(score4, threshold)
+  x$num_freq_tags <- as.factor(freq1 + freq2 + freq3 + freq4)
 
   #=============================================
   #frequent terms in unanswered/answered questions
