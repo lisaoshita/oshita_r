@@ -156,10 +156,10 @@ setup <- function(){
     }
     return(score)
   }
-  score1 <- assign_score("tag1")
-  score2 <- assign_score("tag2")
-  score3 <- assign_score("tag3")
-  score4 <- assign_score("tag4")
+  score1 <- assign_score(tag1)
+  score2 <- assign_score(tag2)
+  score3 <- assign_score(tag3)
+  score4 <- assign_score(tag4)
   x$avg_tag_score <- (score1 + score2 + score3 + score4)/as.numeric(x$n_tags)
   x$avg_tag_score[is.nan(x$avg_tag_score)] <- 0
 
