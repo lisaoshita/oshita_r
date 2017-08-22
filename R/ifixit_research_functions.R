@@ -38,6 +38,7 @@ setup <- function(){
   #====================================
   # coding NAs as "Other"
   x$category[is.na(x$category)] <- "Other"
+  x$subcategory[is.na(x$subcategory)] <- "Other"
   #====================================
   # creating new_category
   x$new_category <- x$category
