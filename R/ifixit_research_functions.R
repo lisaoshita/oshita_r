@@ -115,11 +115,9 @@ setup <- function(){
   # greeting
   greeting_terms <- c("hey", "hello", "greetings", "hi")
   x$greeting <- str_detect(str_to_lower(x$text), pattern = START %R% or1(greeting_terms))
-  pvalues <- get_pvalue("greeting")
   #=============================================
   # newline ratio to length of text
   x$newline_ratio <- str_count(x$text, pattern = "\n")/str_length(x$text)
-  pvalues <- get_pvalue("newline_ratio")
   #=============================================
   # avg_tag_length
   split_tags <- str_split(x$tags, ", ", simplify = TRUE)
