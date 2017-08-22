@@ -2,21 +2,23 @@
 
 #' Clean corpus
 #'
-#' Removes whitespace, transforms characters to lowercase, and removes stopwords (with the option to add additional stopwords to remove). This function is used in get_freq_terms.
+#' Removes whitespace, removes punctuation, transforms characters to lowercase, and removes stopwords (with the option to add additional stopwords to remove). This function is used in get_freq_terms.
 #'
 #' @param corpus corpus to be cleaned. To create the corpus use: source <- VectorSource(vec), corpus <- VCorpus(source)
 #' @param stopwords optional, adds stopwords to remove. If not specified it will only remove English stopwords from the tm package.
 #' @return corpus
-#' @importFrom tm tm_map stripWhitespace content_transformer removeWords stopwords
+#' @importFrom tm tm_map stripWhitespace removePunctuation content_transformer removeWords stopwords
 #' @export
 clean_corpus <- function(corpus, stopwords = NULL){
   if (is.null(stopwords)) {
     corpus <- tm_map(corpus, stripWhitespace)
+    corpus <- tm_map(corpus, removePunctuation)
     corpus <- tm_map(corpus, content_transformer(tolower))
     corpus <- tm_map(corpus, removeWords, c(stopwords("en")))
     return(corpus)
   } else {
     corpus <- tm_map(corpus, stripWhitespace)
+    corpus <- tm_map(corpus, removePunctuation)
     corpus <- tm_map(corpus, content_transformer(tolower))
     corpus <- tm_map(corpus, removeWords, c(stopwords("en"), stopwords))
     return(corpus)
