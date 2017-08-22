@@ -170,10 +170,10 @@ setup <- function(){
     num_freq[var >= threshold] <- 1
     return(num_freq)
   }
-  freq1 <- num_pop(score1, threshold)
-  freq2 <- num_pop(score2, threshold)
-  freq3 <- num_pop(score3, threshold)
-  freq4 <- num_pop(score4, threshold)
+  freq1 <- n_freq(score1, threshold)
+  freq2 <- n_freq(score2, threshold)
+  freq3 <- n_freq(score3, threshold)
+  freq4 <- n_freq(score4, threshold)
   x$num_freq_tags <- as.factor(freq1 + freq2 + freq3 + freq4)
 
   #=============================================
