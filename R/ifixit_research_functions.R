@@ -2,7 +2,7 @@
 
 #' Set up iFixit Answers data
 #'
-#' Subsets iFixit Answers data to only questions in English. Sets up time_until_answer (hrs) variable.
+#' Subsets iFixit Answers data to only questions in English. Sets up time_until_answer (hrs) variable. Creates other predictor variables. (Takes no argument)
 #'
 #' @importFrom magrittr "%>%"
 #' @importFrom stringr str_detect str_to_lower str_length str_count str_split str_replace_all
@@ -185,17 +185,19 @@ setup <- function(){
   unanswered <- x %>%
     tibble::as_tibble() %>%
     filter(answered == 0)
-
   terms_a <- oshitar::get_freq_terms(answered$title, stopwords = c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix"))
   terms_a$prop_in_answered <- terms_a$frequency/nrow(terms_a)
   colnames(terms_a)[2] <- "frequency_a"
-
   terms_u <- oshitar::get_freq_terms(unanswered$title, stopwords = c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix"))
   terms_u$prop_in_unanswered <- terms_u$frequency/nrow(terms_u)
   colnames(terms_u)[2] <- "frequency_u"
-
   combined <- dplyr::full_join(terms_a, terms_u, by = "word")
   combined$ratio <- combined$prop_in_answered / combined$prop_in_unanswered
+
+  # removing devices
+  terms <- glue::collapse(unique(str_to_lower(c(unique(x$category), unique(x$subcategory), unique(x$new_category)))), sep = " ")
+  delete <- purrr::map_dbl(combined$word, ~str_detect(terms, pattern = SPC %R% . %R% SPC))
+  combined <- combined[-which(delete == 1),]
 
   p_threshold <- 0.01
   ratio_threshold <- 1
@@ -206,6 +208,7 @@ setup <- function(){
   freq_terms_a <- combined %>%
     filter(prop_in_answered > p_threshold) %>%
     filter(ratio > ratio_threshold)
+
 
   x$contain_unanswered <- str_detect(as.character(x$title), pattern = or1(freq_terms_u$word))
   x$contain_answered <- str_detect(as.character(x$title), pattern = or1(freq_terms_a$word))
