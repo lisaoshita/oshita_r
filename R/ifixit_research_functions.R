@@ -2,30 +2,53 @@
 
 #' Set up iFixit Answers data
 #'
-#' Subsets iFixit Answers data to questions in English. Sets up time_until_answer (hrs) variable.
+#' Subsets iFixit Answers data to only questions in English. Sets up time_until_answer (hrs) variable.
 #'
 #' @importFrom magrittr "%>%"
+#' @importFrom stringr str_detect str_to_lower
+#' @importFrom rebus "%R%" START SPC
 #' @return data frame
 #' @export
 setup <- function(){
   dir <- file.path(getwd(),"data")
   out <- read.csv(system.file("extdata/answers_data.csv", package = "oshitar"))
 
+  #====================================
+  # subsetting to questions in English, converting langid from factor to character
   x <- out %>%
-    dplyr::tbl_df() %>%
+    tibble::as_tibble() %>%
     dplyr::filter(langid == "en")
-
+  x$langid <- as.character(x$langid)
+  #====================================
+  # creating time_until_answer
   x$time_until_answer <- (x$first_answer_date - x$post_date)/3600
   empty <- which(is.na(x$time_until_answer))
   for (i in empty) {
     x$time_until_answer[i] <- (x$download_date[i] - x$post_date[i])/3600
   }
-
+  #====================================
   # coding NAs as "Other"
   x$category <- as.character(x$category)
   x$category[is.na(x$category)] <- "Other"
+  #====================================
+  # creating new_category
+  x$new_category <- as.character(x$category)
 
-  # recoding factor variables with over 10 levels as character variables
+  apple_terms <- c("apple", "ipod", "ipad") # grouping apple products
+  x$apple <- str_detect(str_to_lower(x$device), pattern = START %R% or1(apple_terms) %R% SPC)
+  x$new_category[x$apple == TRUE | x$subcategory == "iPhone" | x$category == "Mac"] <- "Apple Product"
+  x$new_category[x$new_category == "Phone"] <- "Android/Other Phone" # renaming left-over phones
+  x$new_category[x$new_category == "Appliance" | x$new_category == "Household"] <- "Home"
+  x$new_category[x$new_category == "Car and Truck" | x$new_category == "Vehicle"] <- "Vehicle"
+  # grouping categories with less than 100 questions with "Other"
+  counts <- x %>%
+    dplyr::group_by(new_category) %>%
+    dplyr::summarise(n = dplyr::n())
+  for (i in which(counts$n <= 100)) {
+    x$new_category[x$new_category == counts$new_category[i]] <- "Other"
+  }
+  #====================================
+  # recoding factor variables with more than 10 levels as character variables (title, text, tags...)
   n_levels <- x %>%
     select_if(is.factor) %>%
     purrr::map_dbl(~length(levels(.)))

@@ -10,5 +10,5 @@ setup()
 data frame
 }
 \description{
-Subsets iFixit Answers data to questions in English. Sets up time_until_answer (hrs) variable.
+Subsets iFixit Answers data to only questions in English. Sets up time_until_answer (hrs) variable.
 }
