@@ -7,7 +7,7 @@
 #' @importFrom magrittr "%>%"
 #' @importFrom stringr str_detect str_to_lower
 #' @importFrom rebus "%R%" START SPC
-#' @importFrom dply group_by summarise n()
+#' @importFrom dplyr group_by summarise n
 #' @return data frame
 #' @export
 setup <- function(){
