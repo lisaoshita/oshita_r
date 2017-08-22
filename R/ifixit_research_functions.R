@@ -143,16 +143,16 @@ setup <- function(){
     arrange(desc(percent))
 
   #creating average frequency score variable
-  x$tag1 <- split_tags[,1]
-  x$tag2 <- split_tags[,2]
-  x$tag3 <- split_tags[,3]
-  x$tag4 <- split_tags[,4]
+  tag1 <- split_tags[,1]
+  tag2 <- split_tags[,2]
+  tag3 <- split_tags[,3]
+  tag4 <- split_tags[,4]
 
   assign_score <- function(variable) {
     score <- rep(0, nrow(x))
-    notempty <- which(x[[variable]] != "")
+    notempty <- which(variable != "")
     for (i in notempty) {
-      score[i] <- tag_freq$percent[which(tag_freq$tag == x[[variable]][i])]
+      score[i] <- tag_freq$percent[which(tag_freq$tag == variable[i])]
     }
     return(score)
   }
