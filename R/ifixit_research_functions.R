@@ -6,7 +6,7 @@
 #'
 #' @importFrom magrittr "%>%"
 #' @importFrom stringr str_detect str_to_lower str_length str_count str_split str_replace_all str_locate
-#' @importFrom rebus "%R%" START SPC QUESTION END or1
+#' @importFrom rebus "%R%" START SPC QUESTION END or1 or
 #' @importFrom dplyr group_by summarise n arrange filter desc
 #' @return data frame
 #' @export
