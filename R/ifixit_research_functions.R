@@ -30,7 +30,7 @@ setup <- function(){
   #====================================
   # recoding factor variables with more than 10 levels as character variables (title, text, tags...)
   n_levels <- x %>%
-    select_if(is.factor) %>%
+    dplyr::select_if(is.factor) %>%
     purrr::map_dbl(~length(levels(.)))
   for (i in (which(n_levels > 10))) {
     x[[names(n_levels)[i]]] <- as.character(x[[names(n_levels)[i]]])
