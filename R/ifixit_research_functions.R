@@ -60,6 +60,9 @@ setup <- function(){
   #new_user
   x$new_user <- as.factor(x$new_user)
   #====================================
+  #n_tags
+  x$n_tags <- as.factor(x$n_tags)
+  #====================================
   #weekday
   x$datetime <- as.POSIXct(x$post_date,origin="1970-01-01")
   x$weekday <- factor(weekdays(x$datetime), levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
