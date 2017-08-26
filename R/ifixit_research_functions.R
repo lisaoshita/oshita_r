@@ -350,7 +350,7 @@ variable_setup <- function(data) {
   props <- x %>%
     group_by(new_category) %>%
     summarise(prop = n()/nrow(x))
-  thresh <- 150/nrow(x)
+  thresh <- 0.019 # this is the proportion threshold used when creating new_category in full data set
   for (i in which(props$prop <= thresh)) {
     x$new_category[x$new_category == counts$new_category[i]] <- "Other"
   }
@@ -413,47 +413,51 @@ variable_setup <- function(data) {
   # newline ratio to length of text
   x$newline_ratio <- str_count(x$text, pattern = "\n")/str_length(x$text)
   #=============================================
-  # avg_tag_length
-  split_tags <- str_split(x$tags, ", ", simplify = TRUE)
-  x$avg_tag_length <- NA
-  not_na <- which(x$tags != "")
-  for (i in not_na) {
-    total_char <- sum(str_length(as.vector(split_tags[i,])))
-    total_tags <- sum(as.vector(split_tags[i,]) != "")
-    x$avg_tag_length[i] <- total_char / total_tags
-  }
-  x$avg_tag_length[is.na(x$avg_tag_length)] <- 0
-  #=============================================
-  # frequency of tags
-  tag_vector <- as.vector(split_tags)
-  tag_vector <- tag_vector[which(tag_vector != "")]
-  unique_tags <- unique(tag_vector)
+  if (x$n_tags != 0) {
 
-  tag_freq <- data.frame(tag = unique_tags, percent = purrr::map_dbl(unique_tags, ~mean(rowSums(split_tags == .) > 0)))
-  tag_freq <- tag_freq %>%
-    arrange(desc(percent))
-
-  #creating average frequency score variable
-  tag1 <- split_tags[,1]
-  tag2 <- split_tags[,2]
-  tag3 <- split_tags[,3]
-  tag4 <- split_tags[,4]
-
-  assign_score <- function(variable) {
-    score <- rep(0, nrow(x))
-    notempty <- which(variable != "")
-    for (i in notempty) {
-      score[i] <- tag_freq$percent[which(tag_freq$tag == variable[i])]
+    # avg_tag_length
+    split_tags <- str_split(x$tags, ", ", simplify = TRUE)
+    x$avg_tag_length <- NA
+    not_na <- which(x$tags != "")
+    for (i in not_na) {
+      total_char <- sum(str_length(as.vector(split_tags[i,])))
+      total_tags <- sum(as.vector(split_tags[i,]) != "")
+      x$avg_tag_length[i] <- total_char / total_tags
     }
-    return(score)
-  }
-  score1 <- assign_score(tag1)
-  score2 <- assign_score(tag2)
-  score3 <- assign_score(tag3)
-  score4 <- assign_score(tag4)
-  x$avg_tag_score <- (score1 + score2 + score3 + score4)/as.numeric(x$n_tags)
-  x$avg_tag_score[is.nan(x$avg_tag_score)] <- 0
 
+    # avg_tag_score
+    tag_vector <- as.vector(split_tags)
+    tag_vector <- tag_vector[which(tag_vector != "")]
+    unique_tags <- unique(tag_vector)
+
+    tag_freq <- data.frame(tag = unique_tags, percent = purrr::map_dbl(unique_tags, ~mean(rowSums(split_tags == .) > 0)))
+    tag_freq <- tag_freq %>%
+      arrange(desc(percent))
+
+    #creating average frequency score variable
+    tag1 <- split_tags[,1]
+    tag2 <- split_tags[,2]
+    tag3 <- split_tags[,3]
+    tag4 <- split_tags[,4]
+
+    assign_score <- function(variable) {
+      score <- rep(0, nrow(x))
+      notempty <- which(variable != "")
+      for (i in notempty) {
+        score[i] <- tag_freq$percent[which(tag_freq$tag == variable[i])]
+      }
+      return(score)
+    }
+    score1 <- assign_score(tag1)
+    score2 <- assign_score(tag2)
+    score3 <- assign_score(tag3)
+    score4 <- assign_score(tag4)
+    x$avg_tag_score <- (score1 + score2 + score3 + score4)/as.numeric(x$n_tags)
+
+  } else {
+      x$avg_tag_length[x$tags == ""] <- 0
+      x$avg_tag_score <- 0
+  }
   #=============================================
   #frequent terms in unanswered/answered questions
   answered <- x %>%
@@ -485,7 +489,6 @@ variable_setup <- function(data) {
   freq_terms_a <- combined %>%
     filter(prop_in_answered > p_threshold) %>%
     filter(ratio > ratio_threshold)
-
 
   x$contain_unanswered <- str_detect(as.character(x$title), pattern = or1(freq_terms_u$word))
   x$contain_answered <- str_detect(as.character(x$title), pattern = or1(freq_terms_a$word))
