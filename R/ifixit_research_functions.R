@@ -27,6 +27,7 @@ setup <- function(){
   for (i in empty) {
     x$time_until_answer[i] <- (x$download_date[i] - x$post_date[i])/3600
   }
+  units(x$time_until_answer) <- "Hour"
   #====================================
   # recoding factor variables with more than 10 levels as character variables (title, text, tags...)
   n_levels <- x %>%
