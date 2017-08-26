@@ -2,17 +2,16 @@
 % Please edit documentation in R/ifixit_research_functions.R
 \name{variable_setup}
 \alias{variable_setup}
-\title{Variable setup for test data sets}
+\title{Variable setup for final model}
 \usage{
 variable_setup(data)
 }
 \arguments{
-\item{data}{test data set to be used}
+\item{data}{data set to use}
 }
 \value{
 data frame
 }
 \description{
-Function to set up each of the variables included in the cox regression model.
-Adds variables: new_category, weekday, ampm, text_length, device_length, title_questionmark, title_beginwh, capital_text, update, newline_ratio, frequent_tags, contain_answered, contain_unanswered
+Subsets data to all questions in English. Sets up all variables included in the final model.
 }

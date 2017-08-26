@@ -2,7 +2,7 @@
 
 #' Set up iFixit Answers data
 #'
-#' Subsets iFixit Answers data to only questions in English. Sets up time_until_answer (hrs) variable. Creates other predictor variables. (Takes no argument)
+#' Subsets iFixit Answers data to only questions in English. Sets up time_until_answer (hrs) variable. Creates other predictor variables used in model building.
 #'
 #' @importFrom magrittr "%>%"
 #' @importFrom stringr str_detect str_to_lower str_length str_count str_split str_replace_all str_locate
@@ -17,7 +17,6 @@ setup <- function(){
   #====================================
   # subsetting to questions in English, converting langid from factor to character
   x <- out %>%
-    tibble::as_tibble() %>%
     filter(langid == "en")
   x <- x[,-which(names(x) == "langid")]
   #====================================
@@ -49,11 +48,12 @@ setup <- function(){
   x$new_category[x$new_category == "Phone"] <- "Android/Other Phone" # renaming left-over phones
   x$new_category[x$new_category == "Appliance" | x$new_category == "Household"] <- "Home"
   x$new_category[x$new_category == "Car and Truck" | x$new_category == "Vehicle"] <- "Vehicle"
-  # grouping categories with less than 100 questions with "Other"
-  counts <- x %>%
+  # grouping small categories questions with "Other"
+  props <- x %>%
     group_by(new_category) %>%
-    summarise(n = n())
-  for (i in which(counts$n <= 150)) {
+    summarise(prop = n()/nrow(x))
+  thresh <- 150/nrow(x)
+  for (i in which(props$prop <= thresh)) {
     x$new_category[x$new_category == counts$new_category[i]] <- "Other"
   }
   #====================================
@@ -303,61 +303,128 @@ get_survplot <- function(survfit, xlim = NULL) {
 
 #=====================================================================
 
-#' Variable setup for test data sets
+#' Variable setup for final model
 #'
-#' Function to set up each of the variables included in the cox regression model.
-#' Adds variables: new_category, weekday, ampm, text_length, device_length, title_questionmark, title_beginwh, capital_text, update, newline_ratio, frequent_tags, contain_answered, contain_unanswered
-#' @param data test data set to be used
+#' Subsets data to all questions in English. Sets up all variables included in the final model.
+#' @param data data set to use
 #' @importFrom stringr str_detect str_length str_to_lower str_count str_split str_replace_all
-#' @importFrom rebus "%R%" or1 SPC START QUESTION
+#' @importFrom rebus "%R%" or1 or SPC START QUESTION END
 #' @importFrom magrittr "%>%"
-#' @importFrom dplyr arrange filter desc
+#' @importFrom dplyr group_by summarise n arrange filter desc
 #' @return data frame
 #' @export
 variable_setup <- function(data) {
-  data$new_category <- as.character(data$category)
-  apple_terms <- c("apple", "ipod", "ipad")
-  data$apple <- str_detect(str_to_lower(data$device), pattern = START %R% or1(apple_terms) %R% SPC)
-  data$new_category[data$apple == TRUE | data$subcategory == "iPhone" | data$category == "Mac"] <- "Apple Product"
-  data$new_category[data$new_category == "Phone"] <- "Android/Other Phone"
-  data$new_category[data$new_category == "Appliance" | data$new_category == "Household"] <- "Home"
-  data$new_category[data$new_category == "Car and Truck" | data$new_category == "Vehicle"] <- "Vehicle"
-  data$new_category[data$new_category == "Apparel" | data$new_category == "Computer Hardware" | data$new_category == "Media Player" | data$new_category == "Skills"] <- "Other"
-  #=============================================
+  # subsetting to questions in English, converting langid from factor to character
+  x <- data %>%
+    filter(langid == "en")
+  x <- x[,-which(names(x) == "langid")]
+  #====================================
+  # creating time_until_answer
+  x$time_until_answer <- (x$first_answer_date - x$post_date)/3600
+  empty <- which(is.na(x$time_until_answer))
+  for (i in empty) {
+    x$time_until_answer[i] <- (x$download_date[i] - x$post_date[i])/3600
+  }
+  #====================================
+  # recoding factor variables with more than 10 levels as character variables (title, text, tags...)
+  n_levels <- x %>%
+    dplyr::select_if(is.factor) %>%
+    purrr::map_dbl(~length(levels(.)))
+  for (i in (which(n_levels > 10))) {
+    x[[names(n_levels)[i]]] <- as.character(x[[names(n_levels)[i]]])
+  }
+  #====================================
+  # coding NAs as "Other"
+  x$category[is.na(x$category)] <- "Other"
+  #====================================
+  # creating new_category
+  x$new_category <- x$category
+
+  apple_terms <- c("apple", "ipod", "ipad") # grouping apple products
+  x$apple <- str_detect(str_to_lower(x$device), pattern = START %R% or1(apple_terms) %R% SPC)
+  x$new_category[x$apple == TRUE | x$subcategory == "iPhone" | x$category == "Mac"] <- "Apple Product"
+  x$new_category[x$new_category == "Phone"] <- "Android/Other Phone" # renaming left-over phones
+  x$new_category[x$new_category == "Appliance" | x$new_category == "Household"] <- "Home"
+  x$new_category[x$new_category == "Car and Truck" | x$new_category == "Vehicle"] <- "Vehicle"
+  # grouping small categories questions with "Other"
+  props <- x %>%
+    group_by(new_category) %>%
+    summarise(prop = n()/nrow(x))
+  thresh <- 150/nrow(x)
+  for (i in which(props$prop <= thresh)) {
+    x$new_category[x$new_category == counts$new_category[i]] <- "Other"
+  }
+  #====================================
   #new_user
-  data$new_user <- as.factor(data$new_user)
-  #=============================================
+  x$new_user <- as.factor(x$new_user)
+  #====================================
+  #n_tags
+  x$n_tags <- as.factor(x$n_tags)
+  #====================================
   #weekday
-  data$datetime <- as.POSIXct(data$post_date,origin="1970-01-01")
-  data$weekday <- factor(weekdays(data$datetime), levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
+  datetime <- as.POSIXct(x$post_date,origin="1970-01-01")
+  x$weekday <- factor(weekdays(datetime), levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"))
   #=============================================
   #ampm
-  data$hour <- as.numeric(format(data$datetime,"%H"))
-  data$ampm <- "Night"
-  data$ampm[data$hour >= 5 & data$hour < 12] <- "Morning"
-  data$ampm[data$hour >= 12 & data$hour < 17] <- "Afternoon" #noon - 5pm
-  data$ampm[data$hour >= 17 & data$hour < 20] <- "Evening" #5pm - 8pm
+  hour <- as.numeric(format(datetime,"%H"))
+  x$ampm <- "Night"
+  x$ampm[hour >= 5 & hour < 12] <- "Morning"
+  x$ampm[hour >= 12 & hour < 17] <- "Afternoon" #noon - 5pm
+  x$ampm[hour >= 17 & hour < 20] <- "Evening" #5pm - 8pm
+  #=============================================
+  # text length
+  x$text_length <- str_length(x$text)
   #=============================================
   # device name length
-  data$device_length <- str_length(data$device)
+  x$device_length <- str_length(x$device)
   #=============================================
   # if the title ends with a question mark
-  library(rebus)
-  data$title_questionmark <- str_detect(data$title, pattern = QUESTION %R% END)
+  x$title_questionmark <- str_detect(x$title, pattern = QUESTION %R% END)
   #=============================================
   # if title begins with "wh"
-  data$title_beginwh <- str_detect(str_to_lower(data$title), pattern = "^wh")
+  x$title_beginwh <- str_detect(str_to_lower(x$title), pattern = "^wh")
   #=============================================
   # if text is in all lower case
-  data$cleaned <- str_replace_all(data$text, " ", "")
-  data$cleaned <- str_replace_all(data$cleaned, "[[:punct:]]|[[:digit:]]", "")
-  data$text_all_lower <- str_detect(data$cleaned, pattern = "^[[:lower:]]+$")
+  cleaned <- str_replace_all(x$text, " ", "")
+  cleaned <- str_replace_all(cleaned, "[[:punct:]]|[[:digit:]]", "")
+  x$text_all_lower <- str_detect(cleaned, pattern = "^[[:lower:]]+$")
+  #=============================================
+  # if text contains any end punctuation
+  x$text_contain_punct <- str_detect(x$text, pattern = "[.|?|!]")
   #=============================================
   # if user updated the question
-  data$update <- str_detect(data$text, pattern = "===")
+  x$update <- str_detect(x$text, pattern = "===")
   #=============================================
-  # frequent tags
-  split_tags <- str_split(data$tags, ", ", simplify = TRUE)
+  # prior effort?
+  x$prior_effort <- str_detect(str_to_lower(x$text),
+                               pattern = or("tried", "searched", "researched", "tested",
+                                            "replaced", "used", "checked", "investigated",
+                                            "considered", "measured", "attempted", "inspected", "fitted"))
+  #=============================================
+  # gratitude
+  x$gratitude <- str_detect(str_to_lower(x$text), pattern = or("please", "thank you",
+                                                               "thanks", "thankful",
+                                                               "appreciate", "appreciated",
+                                                               "grateful"))
+  #=============================================
+  # greeting
+  x$greeting <- str_detect(str_to_lower(x$text), pattern = START %R% or("hey", "hello", "greetings", "hi"))
+  #=============================================
+  # newline ratio to length of text
+  x$newline_ratio <- str_count(x$text, pattern = "\n")/str_length(x$text)
+  #=============================================
+  # avg_tag_length
+  split_tags <- str_split(x$tags, ", ", simplify = TRUE)
+  x$avg_tag_length <- NA
+  not_na <- which(x$tags != "")
+  for (i in not_na) {
+    total_char <- sum(str_length(as.vector(split_tags[i,])))
+    total_tags <- sum(as.vector(split_tags[i,]) != "")
+    x$avg_tag_length[i] <- total_char / total_tags
+  }
+  x$avg_tag_length[is.na(x$avg_tag_length)] <- 0
+  #=============================================
+  # frequency of tags
   tag_vector <- as.vector(split_tags)
   tag_vector <- tag_vector[which(tag_vector != "")]
   unique_tags <- unique(tag_vector)
@@ -367,56 +434,47 @@ variable_setup <- function(data) {
     arrange(desc(percent))
 
   #creating average frequency score variable
-  data$tag1 <- split_tags[,1]
-  data$tag2 <- split_tags[,2]
-  data$tag3 <- split_tags[,3]
-  data$tag4 <- split_tags[,4]
+  tag1 <- split_tags[,1]
+  tag2 <- split_tags[,2]
+  tag3 <- split_tags[,3]
+  tag4 <- split_tags[,4]
 
-  assign_score <- function(data, variable) {
-    score <- rep(0, nrow(data))
-    notempty <- which(data[[variable]] != "")
+  assign_score <- function(variable) {
+    score <- rep(0, nrow(x))
+    notempty <- which(variable != "")
     for (i in notempty) {
-      score[i] <- tag_freq$percent[which(tag_freq$tag == data[[variable]][i])]
+      score[i] <- tag_freq$percent[which(tag_freq$tag == variable[i])]
     }
     return(score)
   }
-  data$score1 <- assign_score(data, "tag1")
-  data$score2 <- assign_score(data, "tag2")
-  data$score3 <- assign_score(data, "tag3")
-  data$score4 <- assign_score(data, "tag4")
-
-  # number of "frequent" tags a question contains
-  threshold <- 0.005
-  num_pop <- function(var, threshold) {
-    num_pop <- rep(0, nrow(data))
-    num_pop[data[[var]] >= threshold] <- 1
-    return(num_pop)
-  }
-  numpop1 <- num_pop("score1", threshold)
-  numpop2 <- num_pop("score2", threshold)
-  numpop3 <- num_pop("score3", threshold)
-  numpop4 <- num_pop("score4", threshold)
-  data$num_freq_tags <- as.factor(numpop1 + numpop2 + numpop3 + numpop4)
+  score1 <- assign_score(tag1)
+  score2 <- assign_score(tag2)
+  score3 <- assign_score(tag3)
+  score4 <- assign_score(tag4)
+  x$avg_tag_score <- (score1 + score2 + score3 + score4)/as.numeric(x$n_tags)
+  x$avg_tag_score[is.nan(x$avg_tag_score)] <- 0
 
   #=============================================
   #frequent terms in unanswered/answered questions
-  answered <- data %>%
+  answered <- x %>%
     tibble::as_tibble() %>%
     filter(answered == 1)
-  unanswered <- data %>%
+  unanswered <- x %>%
     tibble::as_tibble() %>%
     filter(answered == 0)
-
   terms_a <- oshitar::get_freq_terms(answered$title, stopwords = c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix"))
   terms_a$prop_in_answered <- terms_a$frequency/nrow(terms_a)
   colnames(terms_a)[2] <- "frequency_a"
-
   terms_u <- oshitar::get_freq_terms(unanswered$title, stopwords = c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix"))
   terms_u$prop_in_unanswered <- terms_u$frequency/nrow(terms_u)
   colnames(terms_u)[2] <- "frequency_u"
-
   combined <- dplyr::full_join(terms_a, terms_u, by = "word")
   combined$ratio <- combined$prop_in_answered / combined$prop_in_unanswered
+
+  # removing devices
+  terms <- glue::collapse(unique(str_to_lower(c(unique(x$category), unique(x$subcategory), unique(x$new_category)))), sep = " ")
+  delete <- purrr::map_dbl(combined$word, ~str_detect(terms, pattern = SPC %R% . %R% SPC))
+  combined <- combined[-which(delete == 1),]
 
   p_threshold <- 0.01
   ratio_threshold <- 1
@@ -428,14 +486,11 @@ variable_setup <- function(data) {
     filter(prop_in_answered > p_threshold) %>%
     filter(ratio > ratio_threshold)
 
-  data$contain_unanswered <- str_detect(as.character(data$title), pattern = or1(freq_terms_u$word))
-  data$contain_answered <- str_detect(as.character(data$title), pattern = or1(freq_terms_a$word))
 
-
-  return(data)
+  x$contain_unanswered <- str_detect(as.character(x$title), pattern = or1(freq_terms_u$word))
+  x$contain_answered <- str_detect(as.character(x$title), pattern = or1(freq_terms_a$word))
+  return(x)
 }
 
-#=====================================================================
 
-# still need to work on:
-# - if factor variable only has 1 question in it's level, merge it with it's neighboring level
+
