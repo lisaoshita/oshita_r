@@ -213,8 +213,8 @@ setup <- function(){
     filter(ratio > ratio_threshold)
 
 
-  x$contain_unanswered <- str_detect(as.character(x$title), pattern = or1(freq_terms_u$word))
-  x$contain_answered <- str_detect(as.character(x$title), pattern = or1(freq_terms_a$word))
+  x$contain_unanswered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(freq_terms_u$word))
+  x$contain_answered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(freq_terms_a$word))
   return(x)
 }
 
@@ -413,8 +413,12 @@ variable_setup <- function(data) {
   # newline ratio to length of text
   x$newline_ratio <- str_count(x$text, pattern = "\n")/str_length(x$text)
   #=============================================
-  if (x$n_tags != 0) {
-
+  # tag-based variables
+  notags <- which(x$n_tags == 0)
+  if (length(notags == nrow(x))) { # if the questions don't contain any tags, code variables as zero
+    x$avg_tag_length[x$tags == ""] <- 0
+    x$avg_tag_score <- 0
+  } else {
     # avg_tag_length
     split_tags <- str_split(x$tags, ", ", simplify = TRUE)
     x$avg_tag_length <- NA
@@ -424,7 +428,6 @@ variable_setup <- function(data) {
       total_tags <- sum(as.vector(split_tags[i,]) != "")
       x$avg_tag_length[i] <- total_char / total_tags
     }
-
     # avg_tag_score
     tag_vector <- as.vector(split_tags)
     tag_vector <- tag_vector[which(tag_vector != "")]
@@ -433,13 +436,11 @@ variable_setup <- function(data) {
     tag_freq <- data.frame(tag = unique_tags, percent = purrr::map_dbl(unique_tags, ~mean(rowSums(split_tags == .) > 0)))
     tag_freq <- tag_freq %>%
       arrange(desc(percent))
-
     #creating average frequency score variable
     tag1 <- split_tags[,1]
     tag2 <- split_tags[,2]
     tag3 <- split_tags[,3]
     tag4 <- split_tags[,4]
-
     assign_score <- function(variable) {
       score <- rep(0, nrow(x))
       notempty <- which(variable != "")
@@ -453,45 +454,14 @@ variable_setup <- function(data) {
     score3 <- assign_score(tag3)
     score4 <- assign_score(tag4)
     x$avg_tag_score <- (score1 + score2 + score3 + score4)/as.numeric(x$n_tags)
-
-  } else {
-      x$avg_tag_length[x$tags == ""] <- 0
-      x$avg_tag_score <- 0
   }
   #=============================================
-  #frequent terms in unanswered/answered questions
-  answered <- x %>%
-    tibble::as_tibble() %>%
-    filter(answered == 1)
-  unanswered <- x %>%
-    tibble::as_tibble() %>%
-    filter(answered == 0)
-  terms_a <- oshitar::get_freq_terms(answered$title, stopwords = c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix"))
-  terms_a$prop_in_answered <- terms_a$frequency/nrow(terms_a)
-  colnames(terms_a)[2] <- "frequency_a"
-  terms_u <- oshitar::get_freq_terms(unanswered$title, stopwords = c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix"))
-  terms_u$prop_in_unanswered <- terms_u$frequency/nrow(terms_u)
-  colnames(terms_u)[2] <- "frequency_u"
-  combined <- dplyr::full_join(terms_a, terms_u, by = "word")
-  combined$ratio <- combined$prop_in_answered / combined$prop_in_unanswered
+  # frequent terms in unanswered/answered questions
+  answeredTerms <- read.csv(system.file("extdata/answersTerms.csv", package = "oshitar"))
+  unansweredTerms <- read.csv(system.file("extdata/unansweredTerms.csv", package = "oshitar"))
 
-  # removing devices
-  terms <- glue::collapse(unique(str_to_lower(c(unique(x$category), unique(x$subcategory), unique(x$new_category)))), sep = " ")
-  delete <- purrr::map_dbl(combined$word, ~str_detect(terms, pattern = SPC %R% . %R% SPC))
-  combined <- combined[-which(delete == 1),]
-
-  p_threshold <- 0.01
-  ratio_threshold <- 1
-
-  freq_terms_u <- combined %>%
-    filter(prop_in_unanswered > p_threshold) %>%
-    filter(ratio < ratio_threshold)
-  freq_terms_a <- combined %>%
-    filter(prop_in_answered > p_threshold) %>%
-    filter(ratio > ratio_threshold)
-
-  x$contain_unanswered <- str_detect(as.character(x$title), pattern = or1(freq_terms_u$word))
-  x$contain_answered <- str_detect(as.character(x$title), pattern = or1(freq_terms_a$word))
+  x$contain_unanswered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(answeredTerms$word))
+  x$contain_answered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(unansweredTerms$word))
   return(x)
 }
 
