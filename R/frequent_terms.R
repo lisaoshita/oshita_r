@@ -2,7 +2,7 @@
 
 #' Clean corpus
 #'
-#' Removes whitespace, removes punctuation, transforms characters to lowercase, and removes stopwords (with the option to add additional stopwords to remove). This function is used in get_freq_terms.
+#' Removes whitespace, removes punctuation, transforms characters to lowercase, and removes stopwords (with the option to add additional stopwords). Used in get_freq_terms.
 #'
 #' @param corpus corpus to be cleaned. To create the corpus use: source <- VectorSource(vec), corpus <- VCorpus(source)
 #' @param stopwords optional, adds stopwords to remove. If not specified it will only remove English stopwords from the tm package.
@@ -27,9 +27,9 @@ clean_corpus <- function(corpus, stopwords = NULL){
 
 #=====================================================================
 
-#' Find the most frequent terms and their frequencies from a character vector
+#' Term frequency
 #'
-#' Turns the input character vector into a DocumentTermMatrix. Sums the frequencies of each words. Returns a data frame with terms and their frequencies arranged from most to least frequent.
+#' Turns the input character vector into a DocumentTermMatrix. Sums the frequencies of each word. Returns a data frame with terms and frequencies arranged from most to least frequent.
 #' @param vec character vector to be turned into corpus
 #' @param n optional, specifies the number of frequent terms to return. If not specified it will return the entire data frame.
 #' @param stopwords optional, adds stopwards to remove. If not specified it will only remove English stopwords from the tm package.

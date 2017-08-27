@@ -2,7 +2,7 @@
 % Please edit documentation in R/frequent_terms.R
 \name{get_freq_terms}
 \alias{get_freq_terms}
-\title{Find the most frequent terms and their frequencies from a character vector}
+\title{Term frequency}
 \usage{
 get_freq_terms(vec, n = NULL, stopwords = NULL)
 }
@@ -17,5 +17,5 @@ get_freq_terms(vec, n = NULL, stopwords = NULL)
 data frame
 }
 \description{
-Turns the input character vector into a DocumentTermMatrix. Sums the frequencies of each words. Returns a data frame with terms and their frequencies arranged from most to least frequent.
+Turns the input character vector into a DocumentTermMatrix. Sums the frequencies of each word. Returns a data frame with terms and frequencies arranged from most to least frequent.
 }
