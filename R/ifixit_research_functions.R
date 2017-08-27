@@ -54,7 +54,7 @@ setup <- function(){
     summarise(prop = n()/nrow(x))
   thresh <- 150/nrow(x)
   for (i in which(props$prop <= thresh)) {
-    x$new_category[x$new_category == counts$new_category[i]] <- "Other"
+    x$new_category[x$new_category == props$new_category[i]] <- "Other"
   }
   #====================================
   #new_user
@@ -182,23 +182,24 @@ setup <- function(){
 
   #=============================================
   #frequent terms in unanswered/answered questions
-  answered <- x %>%
-    tibble::as_tibble() %>%
-    filter(answered == 1)
-  unanswered <- x %>%
-    tibble::as_tibble() %>%
-    filter(answered == 0)
-  terms_a <- oshitar::get_freq_terms(answered$title, stopwords = c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix"))
+  answered <- x %>% tibble::as_tibble() %>% filter(answered == 1)
+  unanswered <- x %>% tibble::as_tibble() %>% filter(answered == 0)
+
+  additional <- c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix", "doesnt", "dont")
+  terms_a <- oshitar::get_freq_terms(answered$title, stopwords = additional)
   terms_a$prop_in_answered <- terms_a$frequency/nrow(terms_a)
   colnames(terms_a)[2] <- "frequency_a"
-  terms_u <- oshitar::get_freq_terms(unanswered$title, stopwords = c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix"))
+
+  terms_u <- oshitar::get_freq_terms(unanswered$title, stopwords = additional)
   terms_u$prop_in_unanswered <- terms_u$frequency/nrow(terms_u)
   colnames(terms_u)[2] <- "frequency_u"
+
   combined <- dplyr::full_join(terms_a, terms_u, by = "word")
   combined$ratio <- combined$prop_in_answered / combined$prop_in_unanswered
 
   # removing devices
-  terms <- glue::collapse(unique(str_to_lower(c(unique(x$category), unique(x$subcategory), unique(x$new_category)))), sep = " ")
+  tomatch <- c(unique(x$category), unique(x$subcategory), unique(x$new_category),"macbook", "ipod", "imac")
+  terms <- glue::collapse(str_to_lower(tomatch), sep = " ")
   delete <- purrr::map_dbl(combined$word, ~str_detect(terms, pattern = SPC %R% . %R% SPC))
   combined <- combined[-which(delete == 1),]
 
@@ -352,7 +353,7 @@ variable_setup <- function(data) {
     summarise(prop = n()/nrow(x))
   thresh <- 0.019 # this is the proportion threshold used when creating new_category in full data set
   for (i in which(props$prop <= thresh)) {
-    x$new_category[x$new_category == counts$new_category[i]] <- "Other"
+    x$new_category[x$new_category == props$new_category[i]] <- "Other"
   }
   #====================================
   #new_user
@@ -413,10 +414,10 @@ variable_setup <- function(data) {
   # newline ratio to length of text
   x$newline_ratio <- str_count(x$text, pattern = "\n")/str_length(x$text)
   #=============================================
-  # tag-based variables
+  # tag-based variables  # tag length not working,
   notags <- which(x$n_tags == 0)
-  if (length(notags == nrow(x))) { # if the questions don't contain any tags, code variables as zero
-    x$avg_tag_length[x$tags == ""] <- 0
+  if (length(notags) == nrow(x)) { # if the questions don't contain any tags, code variables as zero
+    x$avg_tag_length <- 0
     x$avg_tag_score <- 0
   } else {
     # avg_tag_length
@@ -428,6 +429,8 @@ variable_setup <- function(data) {
       total_tags <- sum(as.vector(split_tags[i,]) != "")
       x$avg_tag_length[i] <- total_char / total_tags
     }
+    x$avg_tag_length[x$n_tags == 0] <- 0
+
     # avg_tag_score
     tag_vector <- as.vector(split_tags)
     tag_vector <- tag_vector[which(tag_vector != "")]
@@ -454,16 +457,20 @@ variable_setup <- function(data) {
     score3 <- assign_score(tag3)
     score4 <- assign_score(tag4)
     x$avg_tag_score <- (score1 + score2 + score3 + score4)/as.numeric(x$n_tags)
+    x$avg_tag_score[x$n_tags == 0] <- 0
   }
   #=============================================
   # frequent terms in unanswered/answered questions
-  answeredTerms <- read.csv(system.file("extdata/answersTerms.csv", package = "oshitar"))
-  unansweredTerms <- read.csv(system.file("extdata/unansweredTerms.csv", package = "oshitar"))
+  dir <- file.path(getwd(),"data")
+  answeredTerms <- read.csv(system.file("extdata/answeredTerms.csv", package = "oshitar"))$word
+  unansweredTerms <- read.csv(system.file("extdata/unansweredTerms.csv", package = "oshitar"))$word
 
-  x$contain_unanswered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(answeredTerms$word))
-  x$contain_answered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(unansweredTerms$word))
+  x$contain_answered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(as.character(answeredTerms)))
+  x$contain_unanswered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(as.character(unansweredTerms)))
   return(x)
 }
+
+
 
 
 
