@@ -15,5 +15,5 @@ clean_corpus(corpus, stopwords = NULL)
 corpus
 }
 \description{
-Removes whitespace, removes punctuation, transforms characters to lowercase, and removes stopwords (with the option to add additional stopwords to remove). This function is used in get_freq_terms.
+Removes whitespace, removes punctuation, transforms characters to lowercase, and removes stopwords (with the option to add additional stopwords). Used in get_freq_terms.
 }
