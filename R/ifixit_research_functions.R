@@ -13,29 +13,28 @@
 setup <- function(){
   dir <- file.path(getwd(),"data")
   out <- read.csv(system.file("extdata/answers_data.csv", package = "oshitar"))
-
   #====================================
   # subsetting to questions in English, converting langid from factor to character
   x <- out %>%
     filter(langid == "en")
-  x <- x[,-which(names(x) == "langid")]
+  # x <- x[,-which(names(x) == "langid")]
   #====================================
   # creating time_until_answer
   x$time_until_answer <- (x$first_answer_date - x$post_date)/3600
   empty <- which(is.na(x$time_until_answer))
-  for (i in empty) {
-    x$time_until_answer[i] <- (x$download_date[i] - x$post_date[i])/3600
+  for (k in empty) {
+    x$time_until_answer[k] <- (x$download_date[k] - x$post_date[k])/3600
   }
   #====================================
-  # recoding factor variables with more than 10 levels as character variables (title, text, tags...)
-  n_levels <- x %>%
-    dplyr::select_if(is.factor) %>%
-    purrr::map_dbl(~length(levels(.)))
-  for (i in (which(n_levels > 10))) {
-    x[[names(n_levels)[i]]] <- as.character(x[[names(n_levels)[i]]])
-  }
+  x$device <- as.character(x$device)
+  x$category <- as.character(x$category)
+  x$subcategory <- as.character(x$subcategory)
+  x$title <- as.character(x$title)
+  x$text <- as.character(x$text)
+  x$tags <- as.character(x$tags)
   #====================================
   # coding NAs as "Other"
+  x$category <- as.character(x$category)
   x$category[is.na(x$category)] <- "Other"
   x$subcategory[is.na(x$subcategory)] <- "Other"
   #====================================
@@ -59,9 +58,6 @@ setup <- function(){
   #====================================
   #new_user
   x$new_user <- as.factor(x$new_user)
-  #====================================
-  #n_tags
-  x$n_tags <- as.factor(x$n_tags)
   #====================================
   #weekday
   x$datetime <- as.POSIXct(x$post_date,origin="1970-01-01")
@@ -128,44 +124,43 @@ setup <- function(){
   #=============================================
   # avg_tag_length
   split_tags <- str_split(x$tags, ", ", simplify = TRUE)
-  x$avg_tag_length <- NA
-  not_na <- which(x$tags != "")
-  for (i in not_na) {
-    total_char <- sum(str_length(as.vector(split_tags[i,])))
-    total_tags <- sum(as.vector(split_tags[i,]) != "")
-    x$avg_tag_length[i] <- total_char / total_tags
+  split_tags[is.na(split_tags)] <- ""
+  x$avg_tag_length <- 0
+  not_na <- which(x$n_tags != 0)
+  for (j in not_na) {
+    total_char <- sum(str_length(as.vector(split_tags[j,])))
+    total_tags <- sum(as.vector(split_tags[j,]) != "")
+    x$avg_tag_length[j] <- total_char / total_tags
   }
-  x$avg_tag_length[is.na(x$avg_tag_length)] <- 0
   #=============================================
   # frequency of tags
   tag_vector <- as.vector(split_tags)
   tag_vector <- tag_vector[which(tag_vector != "")]
   unique_tags <- unique(tag_vector)
-
   tag_freq <- data.frame(tag = unique_tags, percent = purrr::map_dbl(unique_tags, ~mean(rowSums(split_tags == .) > 0)))
   tag_freq <- tag_freq %>%
     arrange(desc(percent))
 
   #creating average frequency score variable
-  tag1 <- split_tags[,1]
-  tag2 <- split_tags[,2]
-  tag3 <- split_tags[,3]
-  tag4 <- split_tags[,4]
-
   assign_score <- function(variable) {
-    score <- rep(0, nrow(x))
+    score <- rep(0, length(variable))
     notempty <- which(variable != "")
-    for (i in notempty) {
-      score[i] <- tag_freq$percent[which(tag_freq$tag == variable[i])]
+    for (j in notempty) {
+      score[j] <- tag_freq$percent[which(tag_freq$tag == variable[j])]
     }
     return(score)
   }
-  score1 <- assign_score(tag1)
-  score2 <- assign_score(tag2)
-  score3 <- assign_score(tag3)
-  score4 <- assign_score(tag4)
-  x$avg_tag_score <- (score1 + score2 + score3 + score4)/as.numeric(x$n_tags)
-  x$avg_tag_score[is.nan(x$avg_tag_score)] <- 0
+
+  score1 <- assign_score(split_tags[,1])
+  score2 <- assign_score(split_tags[,2])
+  score3 <- assign_score(split_tags[,3])
+  score4 <- assign_score(split_tags[,4])
+
+  x$avg_tag_score <- 0
+  hastag <- which(x$n_tags != 0)
+  for (index in hastag) {
+    x$avg_tag_score[index] <- (score1[index] + score2[index] + score3[index] + score4[index])/as.numeric(x$n_tags[index])
+  }
 
   # number of "frequent" tags a question contains
   threshold <- 0.005
@@ -216,7 +211,7 @@ setup <- function(){
 
   x$contain_unanswered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(freq_terms_u$word))
   x$contain_answered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(freq_terms_a$word))
-  return(x)
+  return(list(x, tag_freq, split_tags, list(score1, score2, score3, score4), freq_terms_a, freq_terms_u))
 }
 
 #=====================================================================
@@ -328,12 +323,12 @@ variable_setup <- function(data) {
   }
   #====================================
   # recoding factor variables with more than 10 levels as character variables (title, text, tags...)
-  n_levels <- x %>%
-    dplyr::select_if(is.factor) %>%
-    purrr::map_dbl(~length(levels(.)))
-  for (i in (which(n_levels > 10))) {
-    x[[names(n_levels)[i]]] <- as.character(x[[names(n_levels)[i]]])
-  }
+  x$device <- as.character(x$device)
+  x$category <- as.character(x$category)
+  x$subcategory <- as.character(x$subcategory)
+  x$title <- as.character(x$title)
+  x$text <- as.character(x$text)
+  x$tags <- as.character(x$tags)
   #====================================
   # coding NAs as "Other"
   x$category[is.na(x$category)] <- "Other"
@@ -358,9 +353,6 @@ variable_setup <- function(data) {
   #====================================
   #new_user
   x$new_user <- as.factor(x$new_user)
-  #====================================
-  #n_tags
-  x$n_tags <- as.factor(x$n_tags)
   #====================================
   #weekday
   datetime <- as.POSIXct(x$post_date,origin="1970-01-01")
@@ -414,7 +406,7 @@ variable_setup <- function(data) {
   # newline ratio to length of text
   x$newline_ratio <- str_count(x$text, pattern = "\n")/str_length(x$text)
   #=============================================
-  # tag-based variables  # tag length not working,
+  # tag-based variables
   notags <- which(x$n_tags == 0)
   if (length(notags) == nrow(x)) { # if the questions don't contain any tags, code variables as zero
     x$avg_tag_length <- 0
@@ -432,32 +424,26 @@ variable_setup <- function(data) {
     x$avg_tag_length[x$n_tags == 0] <- 0
 
     # avg_tag_score
-    tag_vector <- as.vector(split_tags)
-    tag_vector <- tag_vector[which(tag_vector != "")]
-    unique_tags <- unique(tag_vector)
+    dir <- file.path(getwd(),"data")
+    tag_freq <- read.csv(system.file("extdata/tagfrequencies.csv", package = "oshitar"))
 
-    tag_freq <- data.frame(tag = unique_tags, percent = purrr::map_dbl(unique_tags, ~mean(rowSums(split_tags == .) > 0)))
-    tag_freq <- tag_freq %>%
-      arrange(desc(percent))
-    #creating average frequency score variable
-    tag1 <- split_tags[,1]
-    tag2 <- split_tags[,2]
-    tag3 <- split_tags[,3]
-    tag4 <- split_tags[,4]
     assign_score <- function(variable) {
-      score <- rep(0, nrow(x))
+      score <- rep(0, length(variable))
       notempty <- which(variable != "")
-      for (i in notempty) {
-        score[i] <- tag_freq$percent[which(tag_freq$tag == variable[i])]
+      for (j in notempty) {
+        score[j] <- tag_freq$percent[which(tag_freq$tag == variable[j])]
       }
       return(score)
     }
-    score1 <- assign_score(tag1)
-    score2 <- assign_score(tag2)
-    score3 <- assign_score(tag3)
-    score4 <- assign_score(tag4)
-    x$avg_tag_score <- (score1 + score2 + score3 + score4)/as.numeric(x$n_tags)
-    x$avg_tag_score[x$n_tags == 0] <- 0
+    score1 <- assign_score(split_tags[,1])
+    score2 <- assign_score(split_tags[,2])
+    score3 <- assign_score(split_tags[,3])
+    score4 <- assign_score(split_tags[,4])
+    x$avg_tag_score <- 0
+    hastag <- which(x$n_tags != 0)
+    for (index in hastag) {
+      x$avg_tag_score[index] <- (score1[index] + score2[index] + score3[index] + score4[index])/as.numeric(x$n_tags[index])
+    }
   }
   #=============================================
   # frequent terms in unanswered/answered questions
