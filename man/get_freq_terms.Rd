@@ -2,20 +2,25 @@
 % Please edit documentation in R/frequent_terms.R
 \name{get_freq_terms}
 \alias{get_freq_terms}
-\title{Term frequency}
+\title{Get the frequency of each term in a character vector}
 \usage{
-get_freq_terms(vec, n = NULL, stopwords = NULL)
+get_freq_terms(vec, stopwords = NULL)
 }
 \arguments{
-\item{vec}{character vector to be turned into corpus}
+\item{vec}{character vector to get frequencies from}
 
-\item{n}{optional, specifies the number of frequent terms to return. If not specified it will return the entire data frame.}
-
-\item{stopwords}{optional, adds stopwards to remove. If not specified it will only remove English stopwords from the tm package.}
+\item{stopwords}{optional, adds stopwords to remove from the corpus. If not specified it will only remove
+English stopwords from the tm package. Argument should be input in the form of a string or character vector.}
 }
 \value{
-data frame
+Outputs a data frame. Each row represents a word in the character vector with its respective
+frequency and proportion of times it occured in the vector. Ordered from most to least frequent.
 }
 \description{
-Turns the input character vector into a DocumentTermMatrix. Sums the frequencies of each word. Returns a data frame with terms and frequencies arranged from most to least frequent.
+This function converts the input character vector into a corpus and applies the clean_corpus function from this package.
+The resulting corpus is converted into a document term matrix, from which the number of times each term occurs
+is summed to get the frequency.
+}
+\examples{
+get_freq_terms(words, stopwords = c("remove", "these"))
 }

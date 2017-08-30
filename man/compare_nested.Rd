@@ -4,16 +4,18 @@
 \alias{compare_nested}
 \title{Compare nested models}
 \usage{
-compare_nested(full, reduced)
+compare_nested(full_model, reduced_model)
 }
 \arguments{
-\item{full}{Cox regression object (from the function, coxph) for the full model}
+\item{full_model}{Cox regression object (from the function, coxph) for the full model.}
 
-\item{reduced}{Cox Regression object for the reduced model}
+\item{reduced_model}{Cox Regression object for the reduced model.}
 }
 \value{
-data frame with the statistic and p-value
+data frame with the statistic, degrees of freedom and p-value.
 }
 \description{
-Performs partial likelihood ratio test for cox regression objects using evaluated log partial likelihoods from the full and nested models to determine if the inclusion of additional predictors in the model is necessary.
+Performs partial likelihood ratio test for cox regression objects using evaluated
+log partial likelihoods from the full and nested models to determine if the inclusion
+of additional predictors in the model is necessary. This function only works for coxph fits.
 }
