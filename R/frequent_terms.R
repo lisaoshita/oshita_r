@@ -27,16 +27,21 @@ clean_corpus <- function(corpus, stopwords = NULL){
 
 #=====================================================================
 
-#' Term frequency
+#' Get the frequency of each term in a character vector
 #'
-#' Turns the input character vector into a DocumentTermMatrix. Sums the frequencies of each word. Returns a data frame with terms and frequencies arranged from most to least frequent.
-#' @param vec character vector to be turned into corpus
-#' @param n optional, specifies the number of frequent terms to return. If not specified it will return the entire data frame.
-#' @param stopwords optional, adds stopwards to remove. If not specified it will only remove English stopwords from the tm package.
-#' @return data frame
+#' This function converts the input character vector into a corpus and applies the clean_corpus function from this package.
+#' The resulting corpus is converted into a document term matrix, from which the number of times each term occurs
+#' is summed to get the frequency.
+#' @param vec character vector to get frequencies from
+#' @param stopwords optional, adds stopwords to remove from the corpus. If not specified it will only remove
+#' English stopwords from the tm package. Argument should be input in the form of a string or character vector.
+#' @return Outputs a data frame. Each row represents a word in the character vector with its respective
+#' frequency and proportion of times it occured in the vector. Ordered from most to least frequent.
 #' @importFrom tm VectorSource VCorpus DocumentTermMatrix weightTfIdf
+#' @examples
+#' get_freq_terms(words, stopwords = c("remove", "these"))
 #' @export
-get_freq_terms <- function(vec, n = NULL, stopwords = NULL) {
+get_freq_terms <- function(vec, stopwords = NULL) {
   source <- VectorSource(vec)
   corpus <- VCorpus(source)
 
@@ -50,13 +55,8 @@ get_freq_terms <- function(vec, n = NULL, stopwords = NULL) {
   freq <- colSums(as.matrix(dtm))
   freq <- sort(freq, decreasing = TRUE)
   freq_df <- data.frame(word = names(freq), frequency = unname(freq))
-
-  if (is.null(n)) {
-    return(freq_df)
-  }
-  else {
-    return(freq_df[1:n,])
-  }
+  freq_df$proportion_occurs <- freq_df$frequency/nrow(freq_df)
+  return(freq_df)
 }
 
 #=====================================================================
