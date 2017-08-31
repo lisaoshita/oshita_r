@@ -194,6 +194,12 @@ variable_setup <- function(data){
 #'   \item restricted cubic splines on device_length (5 knots), avg_tag_length (4 knots), and newline_ratio (4 knots)
 #' }
 #'
+#' @example
+#' dir <- file.path(getwd(),"data")
+#' data <- read.csv(file.path(dir, "answers_data.csv"))
+#' model <- fit_model(data, summary = TRUE)
+#' model # calling model by itself will also print a summary of the model
+#'
 #' @export
 
 fit_model <- function(data, summary = FALSE) {
@@ -227,6 +233,14 @@ fit_model <- function(data, summary = FALSE) {
 #'
 #' @return Returns a data frame of predicted failure probabilities. The columns are the times predicted on, the
 #' rows correspond to each question in the data.
+#'
+#' @example
+#' dir <- file.path(getwd(),"data")
+#' data <- read.csv(file.path(dir, "answers_data.csv"))
+#' model <- fit_model(data)
+#' predictions <- predict_failure(model, newdata, times = c(1, 2, 3))
+#'
+#' @export
 
 predict_failure <- function(model, newdata = NULL, times = c(0.5, 1, 3, 5, 10, 24)) {
   if (!is.null(newdata)) {
@@ -256,6 +270,11 @@ predict_failure <- function(model, newdata = NULL, times = c(0.5, 1, 3, 5, 10, 2
 #' column.  In the second position is a data frame containing each unique tag found within
 #' the data, along with the percent/proportion of times it occurs in the data.
 #'
+#' @examples
+#' taglist <- tag_frequency(data$tags)
+#' matrix_of_tags <- taglist[[1]]
+#' tag_frequency_df <- taglist[[2]]
+#'
 #' @export
 
 tag_frequency <- function(tags) {
@@ -274,7 +293,7 @@ tag_frequency <- function(tags) {
 #'
 #' Used in exploratory_setup() and variable_setup() for creating the tag-based variables.
 #' This function takes each tag in the input vector, and matches it to the corresponding frequency
-#' in the input data frame.
+#' in the input data frame. Arguments are from the output of the tag_frequency function.
 #'
 #' @param tag vector of tags
 #' @param tagdf data frame of tags and tag frequencies (output from tag_frequency function)
@@ -315,7 +334,7 @@ assign_tag_freq <- function(tag, tagdf) {
 #'
 #' @return Returns a data frame of words from the input text variable, along with the frequency each word
 #' occurs in all of the data, as well as in answered and unanswered questions, and a ratio calculated as: frequency
-#' in answered divided by frequency in unanswered. The resulting data frame is used in exploratory_set and
+#' in answered divided by frequency in unanswered. The resulting data frame is used in exploratory_setup and
 #' variable_setup functions for the contain_answered and contain_unanswered variables.
 #'
 #' @examples
