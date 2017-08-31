@@ -244,9 +244,9 @@ fit_model <- function(data, summary = FALSE) {
 #' @param model The cox regression model to use for predictions (output from the fit_model function). This function
 #' only works with cph fits, not coxph fits.
 #' @param newdata Optional, new data from which to get predictions for. If this is omitted, this function
-#' will output predictions for each row/question in the data set the model was fit on.
-#' @param times vector of times at which to predict on. If omitted, this function will return predictions at
-#' 0.5, 1, 3, 4, 10, 24 hours.
+#' will output predictions for all subjects linear predictor and strata values at the default/user-specified times.
+#' @param times Vector of times at which to predict on. If omitted, this function will return predictions at
+#' 0.5, 3, 10, 24, 100, 1000 hours.
 #'
 #' @return Returns a data frame of predicted failure probabilities. The columns are the times predicted on, the
 #' rows correspond to each question in the data.
@@ -267,7 +267,7 @@ fit_model <- function(data, summary = FALSE) {
 #'
 #' @export
 
-predict_failure <- function(model, newdata = NULL, times = c(0.5, 1, 3, 5, 10, 24)) {
+predict_failure <- function(model, newdata = NULL, times = c(0.5, 3, 10, 24, 100, 1000)) {
   if (!is.null(newdata)) {
     pr <- data.frame(1 - rms::survest(model, as.data.frame(newdata), times = times, conf.int = FALSE)$surv)
   } else {

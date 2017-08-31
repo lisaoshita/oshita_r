@@ -4,17 +4,17 @@
 \alias{predict_failure}
 \title{Predict failure probabilities for questions on Answers}
 \usage{
-predict_failure(model, newdata = NULL, times = c(0.5, 1, 3, 5, 10, 24))
+predict_failure(model, newdata = NULL, times = c(0.5, 3, 10, 24, 100, 1000))
 }
 \arguments{
 \item{model}{The cox regression model to use for predictions (output from the fit_model function). This function
 only works with cph fits, not coxph fits.}
 
 \item{newdata}{Optional, new data from which to get predictions for. If this is omitted, this function
-will output predictions for each row/question in the data set the model was fit on.}
+will output predictions for all subjects linear predictor and strata values at the default/user-specified times.}
 
-\item{times}{vector of times at which to predict on. If omitted, this function will return predictions at
-0.5, 1, 3, 4, 10, 24 hours.}
+\item{times}{Vector of times at which to predict on. If omitted, this function will return predictions at
+0.5, 3, 10, 24, 100, 1000 hours.}
 }
 \value{
 Returns a data frame of predicted failure probabilities. The columns are the times predicted on, the
