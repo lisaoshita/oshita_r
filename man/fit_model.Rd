@@ -13,15 +13,17 @@ fit_model(data, summary = FALSE)
 Default is set to false.}
 }
 \value{
-Returns the cox regression model
+Returns the cox regression model with 19 independent predictors. See the documentation on the
+variable_setup function for details on what each predictor represents.
 }
 \description{
-This function sets up variables in the input data required to fit the model using
-the variable_setup function from this package, and then fits and returns the model.
+This function sets up variables in the input data using the variable_setup function,
+and then fits and returns the model.
 }
 \details{
-This model fits a cox regression model with 19 independent predictors. See the documentation on the
-variable_setup function for details on what each predictor represents. This model is stratified on ampm, contains
-a quadratic term on text_length, and restricted cubic splines on device_length, avg_tag_length, and newline_ratio with
-5, 4, 4 knots, respectively.
+\itemize {
+  \item this model is stratified on ampm
+  \item contains a quadratic term on text_length
+  \item restricted cubic splines on device_length (5 knots), avg_tag_length (4 knots), and newline_ratio (4 knots)
+}
 }
