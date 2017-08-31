@@ -2,19 +2,43 @@
 % Please edit documentation in R/predict_failure_functions.R
 \name{variable_setup}
 \alias{variable_setup}
-\title{Set up variables in iFixit Answers data for the cox regression model}
+\title{Set up iFixit Answers data for model fitting}
 \usage{
 variable_setup(data)
 }
 \arguments{
-\item{data}{Answers data frame (also include what kind of variables should be included in the data)}
+\item{data}{Answers data frame. The data should include variables: langid, first_answer_date, post_date, download_date,
+new_user, category, subcategory, device, title, text, tags, n_tags}
 }
 \value{
-data frame
+Returns a data frame to be used in model fitting.
 }
 \description{
-Sets up all variables needed. This function is used in fit_model.
+Used in fit_model function. This function subsets the data to all questions in English,
+creates the time_until_answer variable and sets up all other variables required for the cox regression model.
 }
 \details{
-explain the variables it sets up
+Variables created:
+
+\itemize{
+  \item new_category: reorganizes category variable (e.g. pulled out Apple products)
+  \item weekday: day of the week the question was posted
+  \item ampm: (morning, noon, evening, night) time of day the question was posted
+  \item text_length, title_length, device_length
+  \item title_questionmark: whether or not the title ends with a "?"
+  \item title_beginwh: whether or not the title begins with "Wh"
+  \item text_all_lower: whether or not the text is in all lower case
+  \item text_contain_punct: whether or not the text contains any end punctuation marks
+  \item update: whether or not the asker updated their question
+  \item prior_effort: whether or not the asker included words in the text that indicated that
+  they made prior effort/did research before asking the question
+  \item gratitude: whether or not the asker expressed gratitude in the text (e.g. "Thank you", "appreciate")
+  \item greeting: whether or not the asker included a greeting in the text
+  \item newline_ratio: ratio of newlines to the length of the question's text
+  \item avg_tag_length: the average length of all of a question's tags
+  \item avg_tag_score: the score or frequency of a tag is defined as the proportion of times that tag appears
+  in all of the data. avg_tag_score is defined as the average score/frequency of all of a question's tags
+  \item contain_answered: whether or not the question's title contains words considered to be frequent answered terms
+  \item contain_unanswered: whether or not the question's title contains words considered to be frequent unanswered terms
+}
 }
