@@ -4,7 +4,7 @@
 \alias{get_au_terms}
 \title{Get most frequent terms in the titles of answered/unanswered questions}
 \usage{
-get_au_terms(data, variable, stopwords = NULL)
+get_au_terms(data, variable, stopwords = NULL, remove = NULL)
 }
 \arguments{
 \item{data}{The full data set}
@@ -13,13 +13,17 @@ get_au_terms(data, variable, stopwords = NULL)
 Argument should be input as a string.}
 
 \item{stopwords}{Optional, add stopwords to remove. Argument should be input in the form of a string or character vector.
-For the cox regression model, "can", "will", "cant", "wont", "works", "get", "help", "need", "fix", "doesnt", "dont" were removed.}
+For the model, "can", "will", "cant", "wont", "works", "get", "help", "need", "fix", "doesnt", "dont" were removed.}
+
+\item{remove}{Optional, add words to remove from the resulting data frame. Argument should be input in the form of
+a string or character vector. For the model, words that matched with any of the category, subcategory, or new_category
+levels were removed.}
 }
 \value{
-Returns a data frame of words from the user-specified text variable, along with the frequency each word
+Returns a data frame of words from the input text variable, along with the frequency each word
 occurs in all of the data, as well as in answered and unanswered questions, and a ratio calculated as: frequency
-in answered divided by frequency in unanswered. The resulting data frame is used in set up functions for the
-contain_answered and contain_unanswered variables.
+in answered divided by frequency in unanswered. The resulting data frame is used in exploratory_set and
+variable_setup functions for the contain_answered and contain_unanswered variables.
 }
 \description{
 This function is used in variable setup functions for the cox regression model. It separates the full data
@@ -29,7 +33,8 @@ answered and unanswered questions (the fitted model used question titles). The r
 joined by word.
 }
 \examples{
-removethese <- c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix", "doesnt", "dont")
-get_au_terms(data = x, variable = "title", stopwords = removethese)
+words <- c("can", "will", "cant", "wont", "works", "get", "help", "need", "fix", "doesnt", "dont")
+devices <- c("iphone", "macbook", "imac", "ipad")
+get_au_terms(data = x, variable = "title", stopwords = words, remove = devices)
 
 }
