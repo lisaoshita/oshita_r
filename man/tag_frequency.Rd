@@ -7,16 +7,17 @@
 tag_frequency(tags)
 }
 \arguments{
-\item{tags}{tag variable from the data}
+\item{tags}{vector of tags}
 }
 \value{
 Returns a list. In the first position is a matrix, where each row represents
 a question and each column represents the question's tags. A question that has no tags has empty strings in each
-column of the matrix.  In the second position is a data frame containing each unique tag found within
+column.  In the second position is a data frame containing each unique tag found within
 the data, along with the percent/proportion of times it occurs in the data.
 }
 \description{
-Used in variable setup functions. This function takes in vector of tags, and separates that vector
-into a matrix, where each column represents an individual tag. Unique tags are pulled from the
-matrix, and the number of times the unique tags occur in the entire matrix is summed to get the frequency.
+Used in exploratory_setup() and variable_setup() to create the tag-based variables.
+This function takes in vector of tags, and separates that vector into a matrix where each column
+represents an individual tag. Unique tags are pulled from the matrix, and the number of times
+each unique tags occur in the entire matrix is summed to get the frequency.
 }
