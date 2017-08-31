@@ -1,18 +1,21 @@
 
-#' Set up iFixit Answers data for model fitting
+#' Set up iFixit Answers data for model fitting or predictions
 #'
-#' Used in fit_model function. This function subsets the data to all questions in English,
-#' creates the time_until_answer variable and sets up all other variables required for the cox regression model.
+#' Used in fit_model function and to set up the data to be predicted on. This function subsets the
+#' data to all questions in English and creates all necessary variables.
 #'
-#' @param data Answers data frame. The data should include variables: langid, first_answer_date, post_date, download_date,
-#' new_user, category, subcategory, device, title, text, tags, n_tags
+#' @param data Answers data frame.
+#' @param forpredicting Set to true if this function will be used to set up the variables in the prediction
+#' data set, and will not try to set up the time_until_answer variable.
+#' Default is set to false. Default of this function is used in the fit_model function for setting up the
+#' data set to build the model on. The time_until_answer variable will be set up in this case.
 #'
 #' @importFrom magrittr "%>%"
 #' @importFrom stringr str_detect str_to_lower str_length str_count str_replace_all str_locate
 #' @importFrom rebus "%R%" START SPC QUESTION END or1 or
 #' @importFrom dplyr filter select
 #'
-#' @return Returns a data frame to be used in model fitting.
+#' @return Returns a data frame to be used in model fitting or predicting.
 #'
 #' @details Variables created:
 #'
@@ -38,19 +41,33 @@
 #'   \item contain_unanswered: whether or not the question's title contains words considered to be frequent unanswered terms
 #' }
 #'
+#' @note If warnings about empty documents are output, they're from the function get_au_terms. This function
+#' uses the function get_freq_terms, which turns the input into a document term matrix with weighting = weightTfIdf
+#'
+#' @examples
+#' # setting up the data to build the model on
+#' dir <- file.path(getwd(),"data")
+#' out <- read.csv(file.path(dir, "answers_data.csv")) # data set without any variables set up
+#'
+#' model <- fit_model(out) # fit_model calls variable_setup() within
+#'
+#' # setting up variables in the prediction data
+#' newdata <- oshitar::variable_setup(newdata, forpredicting = TRUE)
+#'
 #' @export
 
-variable_setup <- function(data){
+variable_setup <- function(data, forpredicting = FALSE){
 
   x <- data %>%
     tibble::as.tibble() %>%
     filter(langid == "en")
 
   #----Create time_until_answer---------------------------------
-  x$time_until_answer <- (x$first_answer_date - x$post_date) / 3600
-  empty <- is.na(x$time_until_answer)
-  x$time_until_answer[empty] <- (x$download_date[empty] - x$post_date[empty])/3600
-
+  if (forpredicting == FALSE) { # only used on the data to build the model on
+    x$time_until_answer <- (x$first_answer_date - x$post_date) / 3600
+    empty <- is.na(x$time_until_answer)
+    x$time_until_answer[empty] <- (x$download_date[empty] - x$post_date[empty])/3600
+  }
   #----Convert factors to characters----------------------------
   x <- dplyr::mutate_if(x, is.factor, as.character)
 
@@ -194,16 +211,16 @@ variable_setup <- function(data){
 #'   \item restricted cubic splines on device_length (5 knots), avg_tag_length (4 knots), and newline_ratio (4 knots)
 #' }
 #'
-#' @example
+#' @examples
 #' dir <- file.path(getwd(),"data")
-#' data <- read.csv(file.path(dir, "answers_data.csv"))
-#' model <- fit_model(data, summary = TRUE)
-#' model # calling model by itself will also print a summary of the model
+#' out <- read.csv(file.path(dir, "answers_data.csv")) # data set without any variables set up
+#' model <- fit_model(out)
+#' model # calling model by itself will also print out a summary
 #'
 #' @export
 
 fit_model <- function(data, summary = FALSE) {
-  data <- oshitar::variable_setup(data)
+  data <- oshitar::variable_setup(data, forpredicting = FALSE)
   fit <- rms::cph(survival::Surv(time_until_answer, answered) ~ new_category + new_user + contain_unanswered +
                     contain_answered + title_questionmark + title_beginwh + text_contain_punct +
                     text_all_lower + update + greeting + gratitude + prior_effort + weekday + strat(ampm) +
@@ -234,17 +251,25 @@ fit_model <- function(data, summary = FALSE) {
 #' @return Returns a data frame of predicted failure probabilities. The columns are the times predicted on, the
 #' rows correspond to each question in the data.
 #'
-#' @example
+#' @examples
+#' # importing data
 #' dir <- file.path(getwd(),"data")
-#' data <- read.csv(file.path(dir, "answers_data.csv"))
-#' model <- fit_model(data)
-#' predictions <- predict_failure(model, newdata, times = c(1, 2, 3))
+#' out <- read.csv(file.path(dir, "answers_data.csv")) # data set without any variables set up
+#'
+#' # fitting model
+#' model <- fit_model(out)
+#'
+#' # setting up variables in the prediction data
+#' data_for_predicting <- variable_setup(newdata, forpredicting = TRUE)
+#'
+#' predictions <- predict_failure(model, newdata = data_for_predicting)
+#'
 #'
 #' @export
 
 predict_failure <- function(model, newdata = NULL, times = c(0.5, 1, 3, 5, 10, 24)) {
   if (!is.null(newdata)) {
-    pr <- data.frame(1 - rms::survest(model, newdata, times = times, conf.int = FALSE)$surv)
+    pr <- data.frame(1 - rms::survest(model, as.data.frame(newdata), times = times, conf.int = FALSE)$surv)
   } else {
     pr <- data.frame(1 - rms::survest(model, times = times, conf.int = FALSE)$surv)
   }

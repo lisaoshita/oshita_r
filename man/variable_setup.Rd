@@ -2,20 +2,24 @@
 % Please edit documentation in R/functions_to_predict.R
 \name{variable_setup}
 \alias{variable_setup}
-\title{Set up iFixit Answers data for model fitting}
+\title{Set up iFixit Answers data for model fitting or predictions}
 \usage{
-variable_setup(data)
+variable_setup(data, forpredicting = FALSE)
 }
 \arguments{
-\item{data}{Answers data frame. The data should include variables: langid, first_answer_date, post_date, download_date,
-new_user, category, subcategory, device, title, text, tags, n_tags}
+\item{data}{Answers data frame.}
+
+\item{forpredicting}{Set to true if this function will be used to set up the variables in the prediction
+data set, and will not try to set up the time_until_answer variable.
+Default is set to false. Default of this function is used in the fit_model function for setting up the
+data set to build the model on. The time_until_answer variable will be set up in this case.}
 }
 \value{
-Returns a data frame to be used in model fitting.
+Returns a data frame to be used in model fitting or predicting.
 }
 \description{
-Used in fit_model function. This function subsets the data to all questions in English,
-creates the time_until_answer variable and sets up all other variables required for the cox regression model.
+Used in fit_model function and to set up the data to be predicted on. This function subsets the
+data to all questions in English and creates all necessary variables.
 }
 \details{
 Variables created:
@@ -41,4 +45,19 @@ Variables created:
   \item contain_answered: whether or not the question's title contains words considered to be frequent answered terms
   \item contain_unanswered: whether or not the question's title contains words considered to be frequent unanswered terms
 }
+}
+\note{
+If warnings about empty documents are output, they're from the function get_au_terms. This function
+uses the function get_freq_terms, which turns the input into a document term matrix with weighting = weightTfIdf
+}
+\examples{
+# setting up the data to build the model on
+dir <- file.path(getwd(),"data")
+out <- read.csv(file.path(dir, "answers_data.csv")) # data set without any variables set up
+
+model <- fit_model(out) # fit_model calls variable_setup() within
+
+# setting up variables in the prediction data
+newdata <- oshitar::variable_setup(newdata, forpredicting = TRUE)
+
 }

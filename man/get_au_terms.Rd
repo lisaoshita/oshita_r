@@ -22,7 +22,7 @@ levels were removed.}
 \value{
 Returns a data frame of words from the input text variable, along with the frequency each word
 occurs in all of the data, as well as in answered and unanswered questions, and a ratio calculated as: frequency
-in answered divided by frequency in unanswered. The resulting data frame is used in exploratory_set and
+in answered divided by frequency in unanswered. The resulting data frame is used in exploratory_setup and
 variable_setup functions for the contain_answered and contain_unanswered variables.
 }
 \description{

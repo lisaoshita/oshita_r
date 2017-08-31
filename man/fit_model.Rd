@@ -27,3 +27,10 @@ and then fits and returns the model.
   \item restricted cubic splines on device_length (5 knots), avg_tag_length (4 knots), and newline_ratio (4 knots)
 }
 }
+\examples{
+dir <- file.path(getwd(),"data")
+out <- read.csv(file.path(dir, "answers_data.csv")) # data set without any variables set up
+model <- fit_model(out)
+model # calling model by itself will also print out a summary
+
+}

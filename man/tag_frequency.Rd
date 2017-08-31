@@ -21,3 +21,9 @@ This function takes in vector of tags, and separates that vector into a matrix w
 represents an individual tag. Unique tags are pulled from the matrix, and the number of times
 each unique tags occur in the entire matrix is summed to get the frequency.
 }
+\examples{
+taglist <- tag_frequency(data$tags)
+matrix_of_tags <- taglist[[1]]
+tag_frequency_df <- taglist[[2]]
+
+}

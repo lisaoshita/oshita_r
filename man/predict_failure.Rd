@@ -26,3 +26,18 @@ survest function from the rms package. Failure is defined as 1 - survival probab
 probability that an event does happen before a certain time. In this case, the failure probability at time t
 for a question is the probability that a question receives an answer before time t.
 }
+\examples{
+# importing data
+dir <- file.path(getwd(),"data")
+out <- read.csv(file.path(dir, "answers_data.csv")) # data set without any variables set up
+
+# fitting model
+model <- fit_model(out)
+
+# setting up variables in the prediction data
+data_for_predicting <- variable_setup(newdata, forpredicting = TRUE)
+
+predictions <- predict_failure(model, newdata = data_for_predicting)
+
+
+}

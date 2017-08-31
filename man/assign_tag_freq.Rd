@@ -18,5 +18,5 @@ no tags are assigned a frequency of 0.
 \description{
 Used in exploratory_setup() and variable_setup() for creating the tag-based variables.
 This function takes each tag in the input vector, and matches it to the corresponding frequency
-in the input data frame.
+in the input data frame. Arguments are from the output of the tag_frequency function.
 }
