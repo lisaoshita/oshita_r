@@ -338,7 +338,7 @@ plot_failure <- function(model, question) {
     geom_segment(aes(x = hr, xend = hr, y = 0, yend = max),
                  col = "red", size = 0.25) +
     labs(title = paste("Predicted failure probabilities for question", question$id),
-         subtitle = paste("The red lines indicates the highest failure probability the question reaches.",
+         subtitle = paste("The red lines indicate the highest failure probability the question reaches.",
                           "\n", "Maximum failure probability: ", round(max,2), " at ", hr, " hours", sep = ""))
 
 }
