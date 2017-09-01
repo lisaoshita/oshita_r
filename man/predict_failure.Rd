@@ -21,7 +21,7 @@ Returns a data frame of predicted failure probabilities. The columns are the tim
 rows correspond to each question in the data.
 }
 \description{
-This function uses a fitted cox proportional hazards model to predict failure probabilities with the
+This function uses a fitted cox regression model to predict failure probabilities with the
 survest function from the rms package. Failure is defined as 1 - survival probability, and indicates the
 probability that an event does happen before a certain time. In this case, the failure probability at time t
 for a question is the probability that a question receives an answer before time t.

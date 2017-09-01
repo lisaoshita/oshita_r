@@ -236,7 +236,7 @@ fit_model <- function(data, summary = FALSE) {
 
 #' Predict failure probabilities for questions on Answers
 #'
-#' This function uses a fitted cox proportional hazards model to predict failure probabilities with the
+#' This function uses a fitted cox regression model to predict failure probabilities with the
 #' survest function from the rms package. Failure is defined as 1 - survival probability, and indicates the
 #' probability that an event does happen before a certain time. In this case, the failure probability at time t
 #' for a question is the probability that a question receives an answer before time t.
@@ -276,6 +276,73 @@ predict_failure <- function(model, newdata = NULL, times = c(0.5, 3, 10, 24, 100
   colnames(pr) <- times
   return(pr)
 }
+
+#-------------------------------------------------------------------------------
+
+#' Plot failure probability predictions for a question
+#'
+#' This function uses a fitted cox regression model to predict and plot failure probabilities
+#' for a single question. Predictions are made at each minute, starting at 0 hours,
+#' and ending at the maximum time of the data the cox model was fit on. This function then
+#' plots those predictions against the corresponding time with ggplot.
+#'
+#' @param model The cox regression model to use in predicting failure (output from the fit_model function).
+#' This function only works with cph fits.
+#' @param question The question to predict failure probabilities on (one row of Answers data set).
+#'
+#' @importFrom dplyr "%>%" filter
+#' @importFrom ggplot2 aes geom_point scale_x_continuous scale_y_continuous margin
+#' expand_limits theme element_text geom_segment labs
+#'
+#' @return Returns a ggplot of the failure experience for the input question.
+#' The plot indicates when the question is predicted to reach it's maximum
+#' failure probabiity with red reference lines.
+#'
+#' @examples
+#' # importing data
+#' dir <- file.path(getwd(),"data")
+#' out <- read.csv(file.path(dir, "answers_data.csv")) # data set without any variables set up
+#'
+#' # fitting model
+#' model <- fit_model(out)
+#'
+#' # setting up data to predict on
+#' newdata <- variable_setup(newdata)
+#' question <- newdata[1,]
+#'
+#' plot_failure(model, question)
+#'
+#' @export
+
+plot_failure <- function(model, question) {
+
+  predict <- rms::survest(model, newdata = as.data.frame(question),
+                          times = seq(0, model$maxtime, by = 1), conf.int = FALSE)
+
+  df <- data.frame(time = predict$time, pr = 1 - predict$surv) # creating a data frame of times & predictions
+  df <- df %>% filter(!is.na(pr)) # removing any missing predictions
+
+  max <- max(df$pr) # maximum probability and time at which it occurs
+  hr <- which(df$pr == max(df$pr))[1]
+
+  ggplot(df, aes(x = time, y = pr)) +
+    geom_point(size = 0.2) +
+    scale_x_continuous("Hours since the question was posted", expand = c(0.01, 0),
+                       breaks = seq(0, nrow(df), by = 150)) +
+    scale_y_continuous("Predicted Failure Probability", expand = c(0.01, 0),
+                       breaks = seq(0, 1, by = 0.1)) +
+    expand_limits(y = 1, x = 0) +
+    theme(axis.title.x = element_text(margin = margin(t = 10))) +
+    geom_segment(aes(x = 0, xend = hr, y = max, yend = max),
+                 col = "red", size = 0.25) +
+    geom_segment(aes(x = hr, xend = hr, y = 0, yend = max),
+                 col = "red", size = 0.25) +
+    labs(title = paste("Predicted failure probabilities for question", question$id),
+         subtitle = paste("The red lines indicates the highest failure probability the question reaches.",
+                          "\n", "Maximum failure probability: ", round(max,2), " at ", hr, " hours", sep = ""))
+
+}
+
 
 #-------------------------------------------------------------------------------
 
