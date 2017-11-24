@@ -212,10 +212,10 @@ get_survplot <- function(survfit, xlim = NULL) {
       ggplot(df, aes(x = time, y = estimate)) +
         geom_line() +
         scale_y_continuous("Survival Probability") +
-        scale_x_continuous("Time (hours)")
-      ggtitle("Survival Curve")
+        scale_x_continuous("Time (hours)") +
+        ggtitle("Survival Curve")
     }
-    if ("strata" %in% names(df)) {
+    else if ("strata" %in% names(df)) {
       ggplot(df, aes(x = time, y = estimate, color = strata)) +
         geom_line() +
         scale_y_continuous("Survival Probabilities") +
@@ -228,8 +228,8 @@ get_survplot <- function(survfit, xlim = NULL) {
       ggplot(df, aes(x = time, y = estimate)) +
         geom_line() +
         scale_y_continuous("Survival Probability") +
-        scale_x_continuous("Time (hours)", limits = xlim)
-      ggtitle("Survival Curve")
+        scale_x_continuous("Time (hours)", limits = xlim) +
+        ggtitle("Survival Curve")
     }
     if ("strata" %in% names(df)) {
       ggplot(df, aes(x = time, y = estimate, color = strata)) +
@@ -242,5 +242,69 @@ get_survplot <- function(survfit, xlim = NULL) {
   }
 }
 
+#-------------------------------------------------------------------------------
 
+#' Performs an iteration of cross-validation
+#'
+#' Fits a Cox proportional hazards model to the given training set and predicts on the input
+#' test set. Performance metrics for predicted hazard ratios for training and test sets are calculated.
+#'
+#' @param variables a string of the variables to use in the model ("new_user + text_length + ...")
+#' @param train training set to build the model on
+#' @param test test set to predict on
+#'
+#' @importFrom rms cph rcs
+#' @importFrom stats predict
+#' @importFrom survival survConcordance
+#'
+#' @return data frame with prediction performance metrics for the training and test set
+#'
+#' @export
+
+cv <- function(variables, train, test) {
+  formula <- paste("Surv(time_until_answer, answered) ~ ", variables, sep = "")
+  model <- cph(stats::as.formula(formula), data = train)
+
+  train[["predictions"]] <- exp(predict(model, type = "lp"))
+  metric <- cph(Surv(time_until_answer, answered) ~ predictions, data = train)
+  train_metrics <- data.frame(HR = exp(metric$coefficients),
+                              LR = round(metric$stats[3],2),
+                              pval = round(metric$stats[5],2),
+                              R2 = round(metric$stats[8], 2),
+                              AIC = stats::AIC(metric, k = 2),
+                              Dxy = round(metric$stats[9],2),
+                              Concordance = survConcordance(Surv(time_until_answer, answered) ~ predictions,
+                                                            data = train)$concordance)
+  test[["predictions"]] <- exp(predict(model, newdata = test, type = "lp"))
+  metric1 <- rms::cph(Surv(time_until_answer, answered) ~ predictions, data = test)
+  test_metrics <- data.frame(HR = exp(metric1$coefficients),
+                             LR = round(metric1$stats[3],2),
+                             pval = round(metric1$stats[5],2),
+                             R2 = round(metric$stats[8], 2),
+                             AIC = stats::AIC(metric1, k = 2),
+                             Dxy = round(metric1$stats[9],2),
+                             Concordance = survConcordance(Surv(time_until_answer, answered) ~ predictions,
+                                                           data = test)$concordance)
+  stats <- rbind(train_metrics, test_metrics)
+  rownames(stats) <- c("Training Data", "Test Data")
+  return(stats)
+}
+
+#-------------------------------------------------------------------------------
+
+#' Computes the average of performance metrics for training and test sets
+#'
+#' Takes output from cv function in the form of a list, and computes averages across training and test sets
+#'
+#' @param list list of data frames, output from cv function
+#'
+#' @return data frame with averages of metrics
+#'
+#' @export
+
+get_avgcv <- function(list) {
+  avg <- rbind(train_avg = colMeans(purrr::map_df(1:length(list), ~rbind(list[[.]][1,]))),
+               test_avg = colMeans(purrr::map_df(1:length(list), ~rbind(list[[.]][2,]))))
+  return(as.data.frame(avg))
+}
 
