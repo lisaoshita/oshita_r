@@ -66,10 +66,12 @@ variable_setup <- function(data, forpredicting = FALSE){
   if (forpredicting == FALSE) { # only used on the data to build the model on
     x$time_until_answer <- (x$first_answer_date - x$post_date) / 3600
     empty <- is.na(x$time_until_answer)
-    x$time_until_answer[empty] <- (x$download_date[empty] - x$post_date[empty])/3600
+    x$time_until_answer[empty] <- (x$download_date[empty] - x$post_date[empty]) / 3600
   }
+
   #----Convert factors to characters----------------------------
   x <- dplyr::mutate_if(x, is.factor, as.character)
+  x$new_user <- as.character(x$new_user)
 
   #----Recoding NAs---------------------------------------------
   # coding NAs as "Other"
@@ -79,9 +81,8 @@ variable_setup <- function(data, forpredicting = FALSE){
   #----Creates new_category-------------------------------------
   x$new_category <- x$category
 
-  x$apple <- str_detect(str_to_lower(x$device), pattern = START %R% or("apple",
-                                                                       "ipod",
-                                                                       "ipad") %R% SPC)
+  x$apple <- str_detect(str_to_lower(x$device),
+                        pattern = START %R% or("apple","ipod","ipad") %R% SPC)
   x$new_category[x$apple == TRUE | x$subcategory == "iPhone" | x$category == "Mac"] <- "Apple Product"
   x$new_category[x$new_category == "Phone"] <- "Android/Other Phone" # renaming left-over phones
   x$new_category[x$new_category == "Appliance" | x$new_category == "Household"] <- "Home"
@@ -89,20 +90,10 @@ variable_setup <- function(data, forpredicting = FALSE){
   # grouping smaller categories with other
   x$new_category <- forcats::fct_lump(as.factor(x$new_category), prop = 0.02)
 
-  #----new_user-------------------------------------------------
-  x$new_user <- as.factor(x$new_user)
-
   #----weekday--------------------------------------------------
   datetime <- as.POSIXct(x$post_date,origin="1970-01-01")
   x$weekday <- factor(weekdays(datetime), levels = c("Monday", "Tuesday", "Wednesday",
                                                      "Thursday", "Friday", "Saturday", "Sunday"))
-
-  #----ampm/hour------------------------------------------------
-  hour <- as.numeric(format(datetime,"%H"))
-  x$ampm <- "Night"
-  x$ampm[hour >= 5 & hour < 12] <- "Morning"
-  x$ampm[hour >= 12 & hour < 17] <- "Afternoon" #noon - 5pm
-  x$ampm[hour >= 17 & hour < 20] <- "Evening" #5pm - 8pm
 
   #----text length----------------------------------------------
   x$text_length <- str_length(x$text)
@@ -115,9 +106,6 @@ variable_setup <- function(data, forpredicting = FALSE){
 
   #----if the title ends with a "?"-----------------------------
   x$title_questionmark <- str_detect(x$title, pattern = QUESTION %R% END)
-
-  #----if the title begins with "wh"----------------------------
-  x$title_beginwh <- str_detect(str_to_lower(x$title), pattern = "^wh")
 
   #----if text is in all lower case-----------------------------
   cleaned <- str_replace_all(x$text, " ", "")
@@ -135,14 +123,6 @@ variable_setup <- function(data, forpredicting = FALSE){
                                pattern = or("tried", "searched", "researched", "tested",
                                             "replaced", "used", "checked", "investigated",
                                             "considered", "measured", "attempted", "inspected", "fitted"))
-
-  #----if user showed any gratitude-----------------------------
-  x$gratitude <- str_detect(str_to_lower(x$text),
-                            pattern = or("please", "thank you", "thanks", "thankful",
-                                         "appreciate", "appreciated", "grateful"))
-
-  #----if user included a greeting------------------------------
-  x$greeting <- str_detect(str_to_lower(x$text), pattern = START %R% or("hey", "hello", "greetings", "hi"))
 
   #----newline ratio to length of text--------------------------
   x$newline_ratio <- str_count(x$text, pattern = "\n")/str_length(x$text)
@@ -185,7 +165,10 @@ variable_setup <- function(data, forpredicting = FALSE){
   x$contain_answered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(answeredTerms$word))
   x$contain_unanswered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(unansweredTerms$word))
 
-  return(x)
+  #----Convert factors to characters----------------------------
+  x <- dplyr::mutate_if(x, is.factor, as.character)
+
+  return(list(x, answeredTerms, unansweredTerms))
 }
 
 #-------------------------------------------------------------------------------
