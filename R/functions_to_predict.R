@@ -80,13 +80,38 @@ variable_setup <- function(data, forpredicting = FALSE){
 
   #----Creates new_category-------------------------------------
   x$new_category <- x$category
-
-  x$apple <- str_detect(str_to_lower(x$device),
-                        pattern = START %R% or("apple","ipod","ipad") %R% SPC)
-  x$new_category[x$apple == TRUE | x$subcategory == "iPhone" | x$category == "Mac"] <- "Apple Product"
-  x$new_category[x$new_category == "Phone"] <- "Android/Other Phone" # renaming left-over phones
-  x$new_category[x$new_category == "Appliance" | x$new_category == "Household"] <- "Home"
-  x$new_category[x$new_category == "Car and Truck" | x$new_category == "Vehicle"] <- "Vehicle"
+  #----Apple Products---------------------
+  apple <- str_detect(str_to_lower(x$device),
+                        pattern = or("apple","ipod","ipad", "imac", "mac" %R% SPC,
+                                     "macbook", "iphone", "safari", "apple", "ihome"))
+  x$new_category[apple == TRUE | x$subcategory == "iPhone" | x$category == "Mac"] <- "Apple Product"
+  #----Phones-----------------------------
+  phonetf <- str_detect(str_to_lower(x$device), pattern = or("blu", "blackberry", "android",
+                                                             "alcatel", "htc", "huawei", "nokia",
+                                                             "micromax", "moto", "kyocera", "zte",
+                                                             "samsung" %R% SPC %R% "galaxy", "xiaomi"))
+  x$new_category[x$new_category == "Phone" | phonetf == TRUE] <- "Android/Other Phone"
+  #----PC---------------------------------
+  pc <- str_detect(str_to_lower(x$device),
+                   pattern = or("acer", "lenovo", "inspiron", "asus", "laptop", "chromebook", "pavilion",
+                                "satellite", "nextbook"))
+  x$new_category[pc == TRUE] <- "PC"
+  #----Home-------------------------------
+  kenmore <- str_detect(str_to_lower(x$device),
+                        pattern = or("whirlpool", "kenmore", "dyson", "frigidaire", "ge" %R% SPC))
+  x$new_category[x$new_category == "Appliance" | x$new_category == "Household" | kenmore == TRUE] <- "Home"
+  #----Vehicle----------------------------
+  cars <- str_detect(str_to_lower(x$device), pattern = or("chevrolet", "toyota", "jeep", "camry", "ford", "honda", "golfcart", "chevy",
+                                                          "pontiac", "mercury", "audi", "dodge", "nissan", "acura", "cadillac", "silverado",
+                                                          "mazda", "gas scooter"))
+  x$new_category[x$new_category == "Car and Truck" | x$new_category == "Vehicle" | cars == TRUE] <- "Vehicle"
+  #----Tablet-----------------------------
+  tablet <- str_detect(str_to_lower(x$device), pattern = "tablet")
+  x$new_category[tablet == TRUE] <- "Tablet"
+  #----Camera-----------------------------
+  camera <- str_detect(str_to_lower(x$device), pattern = or("canon", "nikon", "coolpix", "polaroid", "fujifilm", "camera"))
+  x$new_category[camera == TRUE] <- "Camera"
+  #---------------------------------------
   # grouping smaller categories with other
   x$new_category <- forcats::fct_lump(as.factor(x$new_category), prop = 0.02)
 
