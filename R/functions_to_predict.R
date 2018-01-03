@@ -78,6 +78,7 @@ variable_setup <- function(data, forpredicting = FALSE){
   x$category[is.na(x$category)] <- "Other"
   x$subcategory[is.na(x$subcategory)] <- "Other"
 
+
   #----Creates new_category-------------------------------------
   x$new_category <- x$category
   #----Apple Products---------------------
@@ -114,6 +115,7 @@ variable_setup <- function(data, forpredicting = FALSE){
   #---------------------------------------
   # grouping smaller categories with other
   x$new_category <- forcats::fct_lump(as.factor(x$new_category), prop = 0.02)
+
 
   #----weekday--------------------------------------------------
   datetime <- as.POSIXct(x$post_date,origin="1970-01-01")
