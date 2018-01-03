@@ -121,6 +121,11 @@ variable_setup <- function(data, forpredicting = FALSE){
   datetime <- as.POSIXct(x$post_date,origin="1970-01-01")
   x$weekday <- factor(weekdays(datetime), levels = c("Monday", "Tuesday", "Wednesday",
                                                      "Thursday", "Friday", "Saturday", "Sunday"))
+  #----week day or Weekend--------------------------------------
+  x$day <- NA
+  x$day[stringr::str_detect(x$weekday,
+                            pattern = rebus::or("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")) == TRUE] <- "Weekday"
+  x$day[is.na(x$day)] <- "Weekend"
 
   #----text length----------------------------------------------
   x$text_length <- str_length(x$text)
