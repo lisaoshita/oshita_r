@@ -21,9 +21,8 @@
 #'
 #' \itemize{
 #'   \item new_category: reorganizes category variable (e.g. pulled out Apple products)
-#'   \item weekday: day of the week the question was posted
-#'   \item ampm: (morning, noon, evening, night) time of day the question was posted
-#'   \item text_length, title_length, device_length
+#'   \item weekday: if the question was posted over the weekend or weekday
+#'   \item text_length, device_length
 #'   \item title_questionmark: whether or not the title ends with a "?"
 #'   \item title_beginwh: whether or not the title begins with "Wh"
 #'   \item text_all_lower: whether or not the text is in all lower case
@@ -31,8 +30,6 @@
 #'   \item update: whether or not the asker updated their question
 #'   \item prior_effort: whether or not the asker included words in the text that indicated that
 #'   they made prior effort/did research before asking the question
-#'   \item gratitude: whether or not the asker expressed gratitude in the text (e.g. "Thank you", "appreciate")
-#'   \item greeting: whether or not the asker included a greeting in the text
 #'   \item newline_ratio: ratio of newlines to the length of the question's text
 #'   \item avg_tag_length: the average length of all of a question's tags
 #'   \item avg_tag_score: the score or frequency of a tag is defined as the proportion of times that tag appears
@@ -78,7 +75,6 @@ variable_setup <- function(data, forpredicting = FALSE){
   x$category[is.na(x$category)] <- "Other"
   x$subcategory[is.na(x$subcategory)] <- "Other"
 
-
   #----Creates new_category-------------------------------------
   x$new_category <- x$category
   #----Apple Products---------------------
@@ -115,16 +111,17 @@ variable_setup <- function(data, forpredicting = FALSE){
   #---------------------------------------
   # grouping smaller categories with other
   x$new_category <- forcats::fct_lump(as.factor(x$new_category), prop = 0.02)
+  x$new_category <- as.character(x$new_category)
 
 
-  #----weekday--------------------------------------------------
+  #----weekday/weekend------------------------------------------
   datetime <- as.POSIXct(x$post_date,origin="1970-01-01")
-  x$weekday <- factor(weekdays(datetime), levels = c("Monday", "Tuesday", "Wednesday",
+  weekday <- factor(weekdays(datetime), levels = c("Monday", "Tuesday", "Wednesday",
                                                      "Thursday", "Friday", "Saturday", "Sunday"))
-  #----week day or Weekend--------------------------------------
   x$day <- NA
-  x$day[stringr::str_detect(x$weekday,
-                            pattern = rebus::or("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")) == TRUE] <- "Weekday"
+  x$day[stringr::str_detect(weekday,
+                            pattern = rebus::or("Monday", "Tuesday", "Wednesday",
+                                                "Thursday", "Friday")) == TRUE] <- "Weekday"
   x$day[is.na(x$day)] <- "Weekend"
 
   #----text length----------------------------------------------
@@ -132,9 +129,6 @@ variable_setup <- function(data, forpredicting = FALSE){
 
   #----device_length--------------------------------------------
   x$device_length <- str_length(x$device)
-
-  #----title_length---------------------------------------------
-  x$title_length <- str_length(x$title)
 
   #----if the title ends with a "?"-----------------------------
   x$title_questionmark <- str_detect(x$title, pattern = QUESTION %R% END)
@@ -197,10 +191,7 @@ variable_setup <- function(data, forpredicting = FALSE){
   x$contain_answered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(answeredTerms$word))
   x$contain_unanswered <- str_detect(str_to_lower(as.character(x$title)), pattern = or1(unansweredTerms$word))
 
-  #----Convert factors to characters----------------------------
-  x <- dplyr::mutate_if(x, is.factor, as.character)
-
-  return(list(x, answeredTerms, unansweredTerms))
+  return(x)
 }
 
 #-------------------------------------------------------------------------------
@@ -236,11 +227,13 @@ variable_setup <- function(data, forpredicting = FALSE){
 
 fit_model <- function(data, summary = FALSE) {
   data <- oshitar::variable_setup(data, forpredicting = FALSE)
-  fit <- rms::cph(survival::Surv(time_until_answer, answered) ~ new_category + new_user + contain_unanswered +
-                    contain_answered + title_questionmark + title_beginwh + text_contain_punct +
-                    text_all_lower + update + greeting + gratitude + prior_effort + weekday + strat(ampm) +
-                    sqrt(avg_tag_score) + pol(text_length, 2) + rcs(device_length, 5) + rcs(avg_tag_length, 4) +
-                    rcs(newline_ratio, 4), data = data, x = TRUE, y = TRUE, surv = TRUE)
+  fit <- rms::cph(Surv(time_until_answer, answered) ~ new_category + new_user +
+                      contain_unanswered + contain_answered + title_questionmark +
+                      text_contain_punct + text_all_lower + update + prior_effort +
+                      day + sqrt(avg_tag_score) + rcs(log10(text_length), 5) +
+                      rcs(log10(avg_tag_length + 1), 4) + rcs(log10(device_length + 1), 5) +
+                      rcs(sqrt(newline_ratio), 3),
+                    data = data, x = TRUE, y = TRUE, surv = TRUE)
   if (summary == TRUE) {
     print(fit)
   }
