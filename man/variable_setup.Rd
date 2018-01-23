@@ -26,9 +26,8 @@ Variables created:
 
 \itemize{
   \item new_category: reorganizes category variable (e.g. pulled out Apple products)
-  \item weekday: day of the week the question was posted
-  \item ampm: (morning, noon, evening, night) time of day the question was posted
-  \item text_length, title_length, device_length
+  \item weekday: if the question was posted over the weekend or weekday
+  \item text_length, device_length
   \item title_questionmark: whether or not the title ends with a "?"
   \item title_beginwh: whether or not the title begins with "Wh"
   \item text_all_lower: whether or not the text is in all lower case
@@ -36,8 +35,6 @@ Variables created:
   \item update: whether or not the asker updated their question
   \item prior_effort: whether or not the asker included words in the text that indicated that
   they made prior effort/did research before asking the question
-  \item gratitude: whether or not the asker expressed gratitude in the text (e.g. "Thank you", "appreciate")
-  \item greeting: whether or not the asker included a greeting in the text
   \item newline_ratio: ratio of newlines to the length of the question's text
   \item avg_tag_length: the average length of all of a question's tags
   \item avg_tag_score: the score or frequency of a tag is defined as the proportion of times that tag appears
