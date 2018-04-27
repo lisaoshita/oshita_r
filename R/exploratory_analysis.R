@@ -1,7 +1,7 @@
 #-------------------------------------------------------------------------------
 #' Set up iFixit Answers data for exploratory analysis
 #'
-#' The function was used to set up all variables for exploratory analysis including variables not
+#' Used to set up all variables for exploratory analysis including variables not
 #' included in the final cox regression model (e.g. num_freq_tags, text_till_punct...). Takes no parameters.
 #'
 #' @importFrom magrittr "%>%"
