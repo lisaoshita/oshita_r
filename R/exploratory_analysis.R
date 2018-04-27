@@ -9,7 +9,7 @@
 #' @importFrom rebus "%R%" START SPC QUESTION END or1 or
 #' @importFrom dplyr group_by summarise n arrange filter desc
 #'
-#' @return Returns Answers data.
+#' @return Returns Answers data
 #'
 #' @export
 
