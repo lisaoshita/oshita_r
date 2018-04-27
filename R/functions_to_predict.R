@@ -1,7 +1,7 @@
 
 #' Set up iFixit Answers data for model fitting or predictions
 #'
-#' Used in fit_model function and to set up the data to be predicted on. This function subsets the
+#' Used in the fit_model function and to set up the data to be predicted on. This function subsets the
 #' data to all questions in English and creates all necessary variables.
 #'
 #' @param data Answers data frame.
